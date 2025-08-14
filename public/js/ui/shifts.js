@@ -181,10 +181,6 @@ export function handleSaveShiftTemplate() {
     const departmentIds = getSelectedPillIds(dom.shiftFormDepartmentPills, 'active');
     const availableDays = getSelectedPillIds(dom.shiftFormDayPills, 'active');
 
-    if (departmentIds.length === 0) {
-        alert("A shift must belong to at least one department.");
-        return;
-    }
     if (availableDays.length === 0) {
         alert("A shift must be available on at least one day.");
         return;
@@ -224,20 +220,31 @@ export function renderShiftTemplates() {
     let filteredTemplates = shiftTemplates;
     if (selectedDeptIds !== null) {
         filteredTemplates = shiftTemplates.filter(st => {
-            return (st.departmentIds || []).some(deptId => selectedDeptIds.includes(deptId));
+            if (!st.departmentIds || st.departmentIds.length === 0) {
+                return selectedDeptIds.includes('_unassigned');
+            }
+            return st.departmentIds.some(deptId => selectedDeptIds.includes(deptId));
         });
     }
 
     const groupedByDept = filteredTemplates.reduce((acc, template) => {
-        (template.departmentIds || []).forEach(deptId => {
-            if (!acc[deptId]) {
-                acc[deptId] = {
-                    name: departments.find(d => d.id === deptId)?.name || 'Unassigned',
-                    templates: []
-                };
+        const deptIds = template.departmentIds || [];
+        if (deptIds.length === 0) {
+            if (!acc._unassigned) {
+                acc._unassigned = { name: 'No Department Assigned', templates: [] };
             }
-            acc[deptId].templates.push(template);
-        });
+            acc._unassigned.templates.push(template);
+        } else {
+            deptIds.forEach(deptId => {
+                if (!acc[deptId]) {
+                    acc[deptId] = {
+                        name: departments.find(d => d.id === deptId)?.name || 'Unassigned',
+                        templates: []
+                    };
+                }
+                acc[deptId].templates.push(template);
+            });
+        }
         return acc;
     }, {});
 
@@ -252,7 +259,11 @@ export function renderShiftTemplates() {
     });
 
     const deptOrder = departments.map(d => d.id);
-    const sortedDeptGroups = Object.keys(groupedByDept).sort((a,b) => deptOrder.indexOf(a) - deptOrder.indexOf(b));
+    const sortedDeptGroups = Object.keys(groupedByDept).sort((a,b) => {
+        if (a === '_unassigned') return 1;
+        if (b === '_unassigned') return -1;
+        return deptOrder.indexOf(a) - deptOrder.indexOf(b);
+    });
 
     sortedDeptGroups.forEach(deptId => {
         const deptGroup = groupedByDept[deptId];
@@ -306,7 +317,20 @@ export function renderShiftTemplates() {
                 deptPills.appendChild(pill);
             });
 
+            const dayPills = document.createElement('div');
+            dayPills.className = 'day-pills-container';
+            daysOrder.forEach(day => {
+                const pill = document.createElement('div');
+                pill.className = 'pill day-pill';
+                pill.textContent = dayNames[day];
+                if ((st.availableDays || []).includes(day)) {
+                    pill.classList.add('active');
+                }
+                dayPills.appendChild(pill);
+            });
+
             pillsContainer.appendChild(deptPills);
+            pillsContainer.appendChild(dayPills);
             itemDiv.appendChild(pillsContainer);
             itemDiv.appendChild(createItemActionButtons(() => populateShiftTemplateFormForEdit(st), () => deleteShiftTemplate(st.id)));
             
