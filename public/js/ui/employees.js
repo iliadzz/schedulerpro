@@ -7,37 +7,11 @@ import {
     terminationReasons,
     DEFAULT_VACATION_DAYS,
     saveUsers,
-    saveScheduleAssignments
+    saveScheduleAssignments,
+    currentUser
 } from '../state.js';
 
-import {
-    employeeListUl,
-    editingEmployeeIdInput,
-    employeeFormModal,
-    employeeModalTitle,
-    employeeFirstNameInput,
-    employeeLastNameInput,
-    employeeDisplayNameInput,
-    employeeDobInput,
-    employeePhoneCodeInput,
-    employeePhoneNumberInput,
-    employeeEmailInput,
-    employeeAddress1Input,
-    employeeAddress2Input,
-    employeeCityInput,
-    employeeDepartmentAddressInput,
-    employeeCountryInput,
-    employeeDepartmentSelect,
-    employeeStartDateInput,
-    employeeTerminationDateInput,
-    employeeTerminationReasonInput,
-    employeeVacationBalanceInput,
-    addEmployeeBtn,
-    cancelEditEmployeeBtn,
-    employeeStatusSelect,
-    terminationDetails
-} from '../dom.js';
-
+import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { createItemActionButtons, generateId } from '../utils.js';
 
@@ -183,6 +157,17 @@ export function populateEmployeeFormForEdit(user) {
     employeeDepartmentSelect.value = user.departmentId || "";
     employeeStartDateInput.value = user.startDate || '';
     employeeVacationBalanceInput.value = user.vacationBalance ?? DEFAULT_VACATION_DAYS;
+    
+    employeeRoleSelect.value = user.role || 'User';
+    employeeRoleSelect.dispatchEvent(new Event('change'));
+    
+    // Populate managed departments
+    const checkboxes = dom.employeeManagedDepartmentsMultiselect.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.checked = (user.managedDepartmentIds || []).includes(cb.value);
+    });
+
+
     if (user.status === 'Terminated') {
         employeeStatusSelect.value = 'Terminated';
         terminationDetails.style.display = 'block';
@@ -219,6 +204,12 @@ export function resetEmployeeForm() {
     terminationDetails.style.display = 'none';
     employeeTerminationDateInput.value = '';
     employeeTerminationReasonInput.value = '';
+    
+    employeeRoleSelect.value = 'User';
+    employeeRoleSelect.dispatchEvent(new Event('change'));
+    const checkboxes = dom.employeeManagedDepartmentsMultiselect.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+
     addEmployeeBtn.textContent = getTranslatedString('btnAddEmployee');
     cancelEditEmployeeBtn.style.display = 'none';
 }
@@ -229,6 +220,13 @@ export async function handleSaveEmployee() {
         alert('First Name and Last Name are required.');
         return;
     }
+
+    const managedDeptIds = [];
+    if (employeeRoleSelect.value === 'Manager') {
+        const checkboxes = dom.employeeManagedDepartmentsMultiselect.querySelectorAll('input[type="checkbox"]:checked');
+        checkboxes.forEach(cb => managedDeptIds.push(cb.value));
+    }
+
     const employeeData = {
         firstName: employeeFirstNameInput.value.trim(),
         lastName: employeeLastNameInput.value.trim(),
@@ -241,7 +239,10 @@ export async function handleSaveEmployee() {
         departmentId: employeeDepartmentSelect.value || null,
         vacationBalance: parseInt(employeeVacationBalanceInput.value, 10) || 0,
         status: employeeStatusSelect.value,
+        role: employeeRoleSelect.value,
+        managedDepartmentIds: managedDeptIds
     };
+
     if (employeeData.status === 'Terminated') {
         employeeData.terminationDate = employeeTerminationDateInput.value || null;
         employeeData.terminationReason = employeeTerminationReasonInput.value || null;
@@ -293,6 +294,16 @@ export function populateTerminationReasons() {
     });
 }
 
+function populateManagedDepartments() {
+    if (!dom.employeeManagedDepartmentsMultiselect) return;
+    dom.employeeManagedDepartmentsMultiselect.innerHTML = '';
+    departments.forEach(dept => {
+        const label = document.createElement('label');
+        label.innerHTML = `<input type="checkbox" value="${dept.id}"> ${dept.name}`;
+        dom.employeeManagedDepartmentsMultiselect.appendChild(label);
+    });
+}
+
 export function renderEmployees() {
     if (!employeeListUl) return;
     
@@ -301,11 +312,21 @@ export function renderEmployees() {
 
     employeeListUl.innerHTML = '';
     
-    let employeesToDisplay = users.filter(user => {
-        const statusMatch = showInactive ? true : (user.status === 'Active' || user.status === undefined);
-        const deptMatch = selectedDeptIds.includes('all') || selectedDeptIds.includes(user.departmentId);
-        return statusMatch && deptMatch;
-    });
+    let employeesToDisplay = users;
+
+    // Filter by Manager's departments if applicable
+    if (currentUser && currentUser.role === 'Manager') {
+        const managerDepts = currentUser.managedDepartmentIds || [];
+        employeesToDisplay = users.filter(user => managerDepts.includes(user.departmentId));
+    } else {
+        // Apply pill filters for General Manager
+        employeesToDisplay = users.filter(user => {
+            const statusMatch = showInactive ? true : (user.status === 'Active' || user.status === undefined);
+            const deptMatch = selectedDeptIds.includes('all') || selectedDeptIds.includes(user.departmentId);
+            return statusMatch && deptMatch;
+        });
+    }
+
 
     employeesToDisplay.sort((a, b) => {
         if (displayFormat === 'LF') {
@@ -362,4 +383,12 @@ export function initEmployeeModalListeners() {
             terminationDetails.style.display = employeeStatusSelect.value === 'Terminated' ? 'block' : 'none';
         });
     }
+    if (employeeRoleSelect) {
+        employeeRoleSelect.addEventListener('change', () => {
+            if (dom.managedDepartmentsContainer) {
+                dom.managedDepartmentsContainer.style.display = employeeRoleSelect.value === 'Manager' ? 'block' : 'none';
+            }
+        });
+    }
+    populateManagedDepartments();
 }

@@ -52,19 +52,19 @@
 
         <nav class="tab-navigation">
             <button class="tab-link active" data-tab="scheduler-tab" data-lang-key="navScheduler"><i class="fas fa-calendar-alt"></i> Scheduler</button>
-            <button class="tab-link" data-tab="employees-tab" data-lang-key="navEmployees"><i class="fas fa-users"></i> Employees</button>
-            <button class="tab-link" data-tab="roles-tab" data-lang-key="navRoles"><i class="fas fa-user-tag"></i> Roles/Positions</button>
-            <button class="tab-link" data-tab="departments-tab" data-lang-key="navDepartments"><i class="fas fa-building"></i> Departments</button>
-            <button class="tab-link" data-tab="shifts-tab" data-lang-key="navShifts"><i class="fas fa-clock"></i> Shift Templates</button>
-            <button class="tab-link" data-tab="settings-tab" data-lang-key="navSettings"><i class="fas fa-cog"></i> Settings</button>
+            <button class="tab-link admin-only" data-tab="employees-tab" data-lang-key="navEmployees"><i class="fas fa-users"></i> Employees</button>
+            <button class="tab-link admin-only" data-tab="roles-tab" data-lang-key="navRoles"><i class="fas fa-user-tag"></i> Roles/Positions</button>
+            <button class="tab-link admin-only" data-tab="departments-tab" data-lang-key="navDepartments"><i class="fas fa-building"></i> Departments</button>
+            <button class="tab-link admin-only" data-tab="shifts-tab" data-lang-key="navShifts"><i class="fas fa-clock"></i> Shift Templates</button>
+            <button class="tab-link admin-only" data-tab="settings-tab" data-lang-key="navSettings"><i class="fas fa-cog"></i> Settings</button>
             <button id="exit-btn" class="exit-button" data-lang-key="navExit"><i class="fas fa-sign-out-alt"></i> Log Out</button>
         </nav>
 
         <main class="tab-content-container">
             <section id="scheduler-tab" class="tab-content active">
                 <div class="scheduler-controls">
-                    <button id="undo-btn" title="Undo Last Action (Ctrl+Z)" disabled><i class="fas fa-undo"></i> Undo</button>
-                    <button id="redo-btn" title="Redo Last Action (Ctrl+Y)" disabled><i class="fas fa-redo"></i> Redo</button>
+                    <button id="undo-btn" class="manager-only" title="Undo Last Action (Ctrl+Z)" disabled><i class="fas fa-undo"></i> Undo</button>
+                    <button id="redo-btn" class="manager-only" title="Redo Last Action (Ctrl+Y)" disabled><i class="fas fa-redo"></i> Redo</button>
                     <button id="this-week-btn" data-lang-key="btnThisWeek"><i class="fas fa-calendar-day"></i> This Week</button>
                     <span id="current-week-display"></span>
                     <button id="prev-week-btn" data-lang-key="btnPrevWeek"><i class="fas fa-arrow-left"></i> Prev</button>
@@ -82,13 +82,13 @@
 
                     <button id="print-schedule-btn" title="Print or save the current schedule as a PDF" data-lang-key="btnPrint"><i class="fas fa-print"></i> Print</button>
                     
-                    <input type="date" id="copy-from-week-picker" title="Select any date within the source week" style="margin-left: 15px;">
-                    <button id="execute-copy-week-btn" title="Copy schedule from the selected source week to the current view" data-lang-key="btnCopyWeek"><i class="fas fa-copy"></i> Copy Week</button>
-                    <button id="manage-events-btn" data-lang-key="btnManageEvents">Manage Events</button>
+                    <input type="date" id="copy-from-week-picker" class="manager-only" title="Select any date within the source week" style="margin-left: 15px;">
+                    <button id="execute-copy-week-btn" class="manager-only" title="Copy schedule from the selected source week to the current view" data-lang-key="btnCopyWeek"><i class="fas fa-copy"></i> Copy Week</button>
+                    <button id="manage-events-btn" class="manager-only" data-lang-key="btnManageEvents">Manage Events</button>
                     
-                    <button id="clear-current-week-btn" class="danger-btn" title="Clear all assignments for the currently displayed week for visible employees" data-lang-key="btnClearWeek"><i class="fas fa-calendar-times"></i> Clear Week</button>
+                    <button id="clear-current-week-btn" class="danger-btn manager-only" title="Clear all assignments for the currently displayed week for visible employees" data-lang-key="btnClearWeek"><i class="fas fa-calendar-times"></i> Clear Week</button>
                     
-                    <button id="clear-copied-shift-btn" style="display:none;" data-lang-key="btnClearCopied"><i class="fas fa-times-circle"></i> Clear Copied Shift</button>
+                    <button id="clear-copied-shift-btn" class="manager-only" style="display:none;" data-lang-key="btnClearCopied"><i class="fas fa-times-circle"></i> Clear Copied Shift</button>
                 </div>
                 
                 <div id="schedule-grid-container">
@@ -415,6 +415,19 @@
                                         <option value="Terminated">Terminated</option>
                                     </select>
                                 </div>
+                                <div class="form-group">
+                                    <label for="employee-role">Role:</label>
+                                    <select id="employee-role">
+                                        <option value="User">User</option>
+                                        <option value="Manager">Manager</option>
+                                        <option value="General Manager">General Manager</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="managed-departments-container" class="form-group" style="display: none; flex-direction: column; align-items: flex-start;">
+                                <label>Managed Departments:</label>
+                                <div id="employee-managed-departments-multiselect" class="multiselect">
+                                </div>
                             </div>
             
                             <div id="termination-details" style="display: none;">
@@ -630,7 +643,7 @@
         </main>
     </div>
     
-    <script type="module" src="js/main.js?v=1.0.11"></script>
+    <script type="module" src="js/main.js?v=1.0.12"></script>
 <script>
   (function(){
     try {

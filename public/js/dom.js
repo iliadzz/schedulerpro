@@ -52,6 +52,10 @@ export const employeeStartDateInput = document.getElementById('employee-start-da
 export const employeeTerminationDateInput = document.getElementById('employee-termination-date');
 export const employeeTerminationReasonInput = document.getElementById('employee-termination-reason');
 export const employeeVacationBalanceInput = document.getElementById('employee-vacation-balance');
+export const employeeRoleSelect = document.getElementById('employee-role');
+export const managedDepartmentsContainer = document.getElementById('managed-departments-container');
+export const employeeManagedDepartmentsMultiselect = document.getElementById('employee-managed-departments-multiselect');
+
 
 // Shift Templates Tab
 export const shiftTemplateNameInput = document.getElementById('shift-template-name');

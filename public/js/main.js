@@ -6,6 +6,7 @@ import { populateTimeSelectsForElements } from './utils.js';
 import * as dom from './dom.js';
 import { setupAuthListeners } from './firebase/auth.js';
 import { initializeSync, initializeDataListeners } from './firebase/firestore.js';
+import { currentUser } from './state.js';
 
 import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, handleSaveDepartment } from './ui/departments.js';
 import { renderRoles, resetRoleForm, handleSaveRole, populateRoleColorPalette, ensureRoleDeptMultiselect, populateRoleDeptCheckboxes } from './ui/roles.js';
@@ -15,6 +16,29 @@ import { renderWeeklySchedule, handlePrevWeek, handleNextWeek, handleThisWeek, h
 import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFile } from './ui/settings.js';
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
+
+export function applyRbacPermissions() {
+    if (!currentUser) return;
+
+    const role = currentUser.role || 'User';
+
+    // Get all elements that have role-based visibility
+    const adminOnlyElements = document.querySelectorAll('.admin-only');
+    const managerOnlyElements = document.querySelectorAll('.manager-only');
+
+    // Start with a baseline (most restrictive)
+    adminOnlyElements.forEach(el => el.style.display = 'none');
+    managerOnlyElements.forEach(el => el.style.display = 'none');
+
+    // Grant access based on role
+    if (role === 'Manager' || role === 'General Manager') {
+        managerOnlyElements.forEach(el => el.style.display = ''); // or 'block', 'inline-block', etc.
+    }
+    if (role === 'General Manager') {
+        adminOnlyElements.forEach(el => el.style.display = '');
+    }
+}
+
 
 // --- Application Entry Point ---
 window.__startApp = function() {

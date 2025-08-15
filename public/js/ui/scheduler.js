@@ -1,6 +1,6 @@
 // js/ui/scheduler.js
 
-import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate } from '../state.js';
+import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { formatDate, getWeekRange, getDatesOfWeek, formatTimeForDisplay, calculateShiftDuration, getContrastColor } from '../utils.js';
@@ -12,6 +12,7 @@ import * as ShiftDnd from '../features/shift-dnd.js';
 import { calculateAndRenderCoverage } from '../features/coverage-calculator.js';
 
 function handleVacationClick(event) {
+    if (currentUser.role === 'User') return;
     const userId = event.currentTarget.dataset.userId;
     const user = users.find(u => u.id === userId);
     if (!user) return;
@@ -125,6 +126,13 @@ export function renderWeeklySchedule() {
         (selectedDepartmentIds.includes('all') || selectedDepartmentIds.includes(user.departmentId))
     );
 
+    // Filter for Manager role
+    if (currentUser && currentUser.role === 'Manager') {
+        const managerDepts = currentUser.managedDepartmentIds || [];
+        visibleUsers = visibleUsers.filter(user => managerDepts.includes(user.departmentId));
+    }
+
+
     visibleUsers.sort((a, b) => {
       const ak = sortKeyForEmployee(a);
       const bk = sortKeyForEmployee(b);
@@ -134,14 +142,25 @@ export function renderWeeklySchedule() {
 
     calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepartmentIds);
     
+    const canEditSchedule = currentUser && currentUser.role !== 'User';
+
     visibleUsers.forEach(user => {
         let weeklyHours = 0;
         const userRowLabel = document.createElement('div');
-        userRowLabel.className = 'employee-row-label draggable-employee-row';
-        userRowLabel.draggable = true;
+        userRowLabel.className = 'employee-row-label';
+        if (canEditSchedule) {
+            userRowLabel.classList.add('draggable-employee-row');
+            userRowLabel.draggable = true;
+            addEmployeeDragAndDropHandlers(userRowLabel);
+        }
+
         userRowLabel.dataset.employeeId = user.id;
 
-        addEmployeeDragAndDropHandlers(userRowLabel);
+        const actionsHTML = canEditSchedule ? `
+            <div class="employee-actions">
+                <button class="copy-employee-week-btn" title="Copy Schedule FOR This Employee"><i class="fas fa-copy"></i></button>
+                <button class="clear-employee-week-btn" title="Clear All Shifts FOR This Employee This Week"><i class="fas fa-trash-alt"></i></button>
+            </div>` : '';
 
         userRowLabel.innerHTML = `
             <div class="employee-name-hours">
@@ -151,23 +170,22 @@ export function renderWeeklySchedule() {
                     <span class="vacation-counter" title="Click to edit vacation days" data-user-id="${user.id}"><i class="fas fa-plane-departure"></i> ${user.vacationBalance}</span>
                 </span>
             </div>
-            <div class="employee-actions">
-                <button class="copy-employee-week-btn" title="Copy Schedule FOR This Employee"><i class="fas fa-copy"></i></button>
-                <button class="clear-employee-week-btn" title="Clear All Shifts FOR This Employee This Week"><i class="fas fa-trash-alt"></i></button>
-            </div>
+            ${actionsHTML}
         `;
         dom.scheduleGridBody.appendChild(userRowLabel);
 
-        userRowLabel.querySelector('.copy-employee-week-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (dom.copyEmployeeModalUserIdInput) dom.copyEmployeeModalUserIdInput.value = user.id;
-            if (dom.copyEmployeeWeekModal) dom.copyEmployeeWeekModal.style.display = 'block';
-        });
-        
-        userRowLabel.querySelector('.clear-employee-week-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            clearEmployeeWeek(user.id, weekDates);
-        });
+        if (canEditSchedule) {
+            userRowLabel.querySelector('.copy-employee-week-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (dom.copyEmployeeModalUserIdInput) dom.copyEmployeeModalUserIdInput.value = user.id;
+                if (dom.copyEmployeeWeekModal) dom.copyEmployeeWeekModal.style.display = 'block';
+            });
+            
+            userRowLabel.querySelector('.clear-employee-week-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                clearEmployeeWeek(user.id, weekDates);
+            });
+        }
 
         weekDates.forEach(date => {
             const cell = document.createElement('div');
@@ -177,11 +195,15 @@ export function renderWeeklySchedule() {
             
             cell.dataset.date = dateStr;
             cell.dataset.userId = user.id;
-            cell.addEventListener('click', () => openAssignShiftModalForNewOrCustom(user.id, dateStr));
-            cell.addEventListener('dragover', ShiftDnd.handleDragOver);
-            cell.addEventListener('dragenter', ShiftDnd.handleDragEnter);
-            cell.addEventListener('dragleave', ShiftDnd.handleDragLeave);
-            cell.addEventListener('drop', ShiftDnd.handleDrop);
+
+            if (canEditSchedule) {
+                cell.addEventListener('click', () => openAssignShiftModalForNewOrCustom(user.id, dateStr));
+                cell.addEventListener('dragover', ShiftDnd.handleDragOver);
+                cell.addEventListener('dragenter', ShiftDnd.handleDragEnter);
+                cell.addEventListener('dragleave', ShiftDnd.handleDragLeave);
+                cell.addEventListener('drop', ShiftDnd.handleDrop);
+            }
+
 
             const shiftsContainer = document.createElement('div');
             shiftsContainer.className = 'shifts-container';
@@ -190,15 +212,19 @@ export function renderWeeklySchedule() {
             dayData.shifts.forEach(assignment => {
                 const itemDiv = document.createElement('div');
                 itemDiv.dataset.assignmentId = assignment.assignmentId;
-                itemDiv.draggable = true;
-                itemDiv.addEventListener('dragstart', (e) => ShiftDnd.handleDragStart(e, user.id, dateStr, assignment));
-                itemDiv.addEventListener('dragend', ShiftDnd.handleDragEnd);
-                itemDiv.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openModalForEdit(assignment, user.id, dateStr);
-                });
+                
+                const deleteBtnHTML = canEditSchedule ? `<button class="delete-assigned-shift-btn" data-assignment-id="${assignment.assignmentId}">&times;</button>`: '';
 
-                const deleteBtnHTML = `<button class="delete-assigned-shift-btn" data-assignment-id="${assignment.assignmentId}">&times;</button>`;
+                if (canEditSchedule) {
+                    itemDiv.draggable = true;
+                    itemDiv.addEventListener('dragstart', (e) => ShiftDnd.handleDragStart(e, user.id, dateStr, assignment));
+                    itemDiv.addEventListener('dragend', ShiftDnd.handleDragEnd);
+                    itemDiv.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openModalForEdit(assignment, user.id, dateStr);
+                    });
+                }
+                
                 if (assignment.type === 'time_off') {
                     itemDiv.className = 'shift-item time-off-item';
                     itemDiv.innerHTML = `<span class="time-off-reason">${assignment.reason.toUpperCase()}</span>` + deleteBtnHTML;
@@ -223,10 +249,13 @@ export function renderWeeklySchedule() {
                     itemDiv.innerHTML = `<span class="shift-time">${startTime || 'N/A'} - ${endTime || 'N/A'}</span> <span class="shift-role">| ${role ? role.name : 'No Role'}</span>` + deleteBtnHTML;
                     if (startTime && endTime) weeklyHours += calculateShiftDuration(startTime, endTime);
                 }
-                itemDiv.querySelector('.delete-assigned-shift-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteAssignedShift(user.id, dateStr, assignment.assignmentId);
-                });
+
+                if (canEditSchedule) {
+                    itemDiv.querySelector('.delete-assigned-shift-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteAssignedShift(user.id, dateStr, assignment.assignmentId);
+                    });
+                }
                 shiftsContainer.appendChild(itemDiv);
             });
             cell.appendChild(shiftsContainer);

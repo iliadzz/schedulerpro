@@ -1,6 +1,8 @@
 // This file isolates all your Firebase Authentication logic. It handles showing the login screen,
 // processing sign-in and sign-up attempts, listening for authentication state changes, and logging the user out. It acts as the "gatekeeper" for your application.
 // js/firebase/auth.js
+import { users, setCurrentUser } from '../state.js';
+import { applyRbacPermissions } from '../main.js';
 
 /**
  * Sets up all Firebase Authentication listeners and login form handlers.
@@ -25,21 +27,37 @@ export function setupAuthListeners() {
     if (window.auth) {
         window.auth.onAuthStateChanged(user => {
             if (user) {
-                // User is signed in.
+                // User is signed in. Find their profile in our database.
+                const userProfile = users.find(u => u.email.toLowerCase() === user.email.toLowerCase());
+                
+                if (userProfile) {
+                    setCurrentUser(userProfile);
+                } else {
+                    // If no profile, default to a restricted "User" role to prevent unauthorized access.
+                    console.warn(`No profile found for ${user.email}, defaulting to restricted view.`);
+                    setCurrentUser({ email: user.email, role: 'User' });
+                }
+
+                // Apply permissions BEFORE initializing the app
+                applyRbacPermissions();
+                
                 showApp();
+                
                 // Call the main app initialization function (defined in main.js)
                 if (window.__startApp) {
                     window.__startApp();
                 }
             } else {
                 // User is signed out.
+                setCurrentUser(null);
                 showLogin();
             }
         });
     } else {
-        // If Firebase Auth is not available, just show the app.
         // This allows for offline or auth-less development.
         console.warn("Firebase Auth not found. Running in offline mode.");
+        setCurrentUser({ role: 'General Manager', displayName: 'Offline Admin' }); // Give full access for offline dev
+        applyRbacPermissions();
         showApp();
         if (window.__startApp) {
             window.__startApp();

@@ -10,6 +10,9 @@ export let scheduleAssignments = JSON.parse(localStorage.getItem('scheduleAssign
 export let events = JSON.parse(localStorage.getItem('events')) || [];
 export let restaurantSettings = JSON.parse(localStorage.getItem('restaurantSettings')) || {};
 
+// --- Logged-in User State ---
+export let currentUser = null; // To hold the profile of the logged-in user
+
 // --- Save Functions ---
 // Functions to persist the core data collections to localStorage and Firestore.
 export function saveDepartments() {

@@ -1,6 +1,6 @@
 // js/ui/roles.js
 
-import { roles, departments, scheduleAssignments, saveRoles, saveScheduleAssignments } from '../state.js';
+import { roles, departments, scheduleAssignments, saveRoles, saveScheduleAssignments, currentUser } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { createItemActionButtons, generateId } from '../utils.js';
@@ -130,6 +130,12 @@ export function handleSaveRole() {
     if (!name) { alert('Role name cannot be empty.'); return; }
     if (!color) { alert('Please select a color for the role.'); return; }
 
+    // RBAC Check
+    if (currentUser.role === 'Manager' && !currentUser.managedDepartmentIds.includes(departmentId)) {
+        alert('You do not have permission to create or edit roles for this department.');
+        return;
+    }
+
     const roleData = { name, color, departmentId };
 
     if (editingId) {
@@ -174,6 +180,15 @@ export function resetRoleForm() {
 }
 
 export async function deleteRole(roleId) {
+    const roleToDelete = roles.find(r => r.id === roleId);
+    if (!roleToDelete) return;
+
+    // RBAC Check
+    if (currentUser.role === 'Manager' && !currentUser.managedDepartmentIds.includes(roleToDelete.departmentId)) {
+        alert('You do not have permission to delete roles from this department.');
+        return;
+    }
+    
     let usageCount = 0;
     for (const key in scheduleAssignments) {
         const dayData = scheduleAssignments[key];
@@ -208,10 +223,26 @@ export async function deleteRole(roleId) {
 export function renderRoles() {
     if (!dom.roleListUl) return;
     dom.roleListUl.innerHTML = '';
-    const selectedDeptIds = getSelectedRoleDepartmentIds();
-    const rolesToDisplay = roles.filter(r => 
-        (selectedDeptIds === null) ? true : selectedDeptIds.includes(r.departmentId)
-    );
+    
+    let rolesToDisplay = [...roles];
+
+    // Filter by Manager's departments if applicable
+    if (currentUser && currentUser.role === 'Manager') {
+        const managerDepts = currentUser.managedDepartmentIds || [];
+        rolesToDisplay = roles.filter(r => managerDepts.includes(r.departmentId));
+        // Hide the department filter for managers as it's redundant
+        const filterUI = document.getElementById('role-dept-multiselect');
+        if(filterUI) filterUI.style.display = 'none';
+    } else {
+         const filterUI = document.getElementById('role-dept-multiselect');
+        if(filterUI) filterUI.style.display = 'block';
+        const selectedDeptIds = getSelectedRoleDepartmentIds();
+        if (selectedDeptIds !== null) {
+            rolesToDisplay = roles.filter(r => selectedDeptIds.includes(r.departmentId));
+        }
+    }
+
+
     rolesToDisplay.forEach(role => {
         const li = document.createElement('li');
         li.className = 'draggable-item';
