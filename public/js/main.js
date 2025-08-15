@@ -11,7 +11,7 @@ import { currentUser } from './state.js';
 import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, handleSaveDepartment } from './ui/departments.js';
 import { renderRoles, resetRoleForm, handleSaveRole, populateRoleColorPalette, ensureRoleDeptMultiselect, populateRoleDeptCheckboxes } from './ui/roles.js';
 import { renderEmployees, populateTerminationReasons, resetEmployeeForm, handleSaveEmployee, initEmployeeModalListeners } from './ui/employees.js';
-import { renderShiftTemplates, resetShiftTemplateForm, handleSaveShiftTemplate, ensureShiftDeptMultiselect, populateShiftDeptCheckboxes } from './ui/shifts.js';
+import { renderShiftTemplates, resetShiftTemplateForm, handleSaveShiftTemplate, ensureShiftDeptMultiselect, populateShiftDeptCheckboxes, initTimePickerModal } from './ui/shifts.js';
 import { renderWeeklySchedule, handlePrevWeek, handleNextWeek, handleThisWeek, handleWeekChange, handlePrint, handleCopyWeek, handleClearWeek } from './ui/scheduler.js';
 import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFile } from './ui/settings.js';
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
@@ -51,14 +51,13 @@ window.__startApp = function() {
     initializeSync();
 
     populateRoleColorPalette();
-    populateTimeSelectsForElements(dom.shiftTemplateStartHourSelect, dom.shiftTemplateStartMinuteSelect, "09", "00");
-    populateTimeSelectsForElements(dom.shiftTemplateEndHourSelect, dom.shiftTemplateEndMinuteSelect, "17", "00");
     populateTimeSelectsForElements(dom.customShiftStartHourSelect, dom.customShiftStartMinuteSelect);
     populateTimeSelectsForElements(dom.customShiftEndHourSelect, dom.customShiftEndMinuteSelect);
 
     populateTerminationReasons();
     populateEventColorPalette();
     initEventModalListeners();
+    initTimePickerModal();
     initModalListeners();
     initAssignShiftModalListeners();
     initEmployeeModalListeners();

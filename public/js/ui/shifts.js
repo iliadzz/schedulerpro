@@ -12,6 +12,100 @@ let sortMode = 'ST'; // ST, END
 const daysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const dayNames = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
 
+// --- Time Picker Modal Logic ---
+
+let activeTimePickerTarget = {
+    pill: null,
+    input: null
+};
+
+function openTimePicker(pillElement, inputElement) {
+    const modal = document.getElementById('time-picker-modal');
+    if (!modal) return;
+
+    activeTimePickerTarget.pill = pillElement;
+    activeTimePickerTarget.input = inputElement;
+
+    const [currentHour, currentMinute] = inputElement.value.split(':');
+
+    const hoursContainer = document.getElementById('time-picker-hours');
+    const minutesContainer = document.getElementById('time-picker-minutes');
+    hoursContainer.innerHTML = '';
+    minutesContainer.innerHTML = '';
+
+    // Populate hours
+    for (let i = 0; i < 24; i++) {
+        const hour = String(i).padStart(2, '0');
+        const hourPill = document.createElement('div');
+        hourPill.className = 'pill';
+        hourPill.textContent = hour;
+        hourPill.dataset.hour = hour;
+        if (hour === currentHour) {
+            hourPill.classList.add('active');
+        }
+        hourPill.addEventListener('click', () => {
+            hoursContainer.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            hourPill.classList.add('active');
+        });
+        hoursContainer.appendChild(hourPill);
+    }
+
+    // Populate minutes
+    ['00', '15', '30', '45'].forEach(minute => {
+        const minutePill = document.createElement('div');
+        minutePill.className = 'pill';
+        minutePill.textContent = minute;
+        minutePill.dataset.minute = minute;
+        if (minute === currentMinute) {
+            minutePill.classList.add('active');
+        }
+        minutePill.addEventListener('click', () => {
+            minutesContainer.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            minutePill.classList.add('active');
+        });
+        minutesContainer.appendChild(minutePill);
+    });
+
+    modal.style.display = 'block';
+}
+
+function saveSelectedTime() {
+    const modal = document.getElementById('time-picker-modal');
+    const selectedHourPill = document.querySelector('#time-picker-hours .pill.active');
+    const selectedMinutePill = document.querySelector('#time-picker-minutes .pill.active');
+
+    if (!selectedHourPill || !selectedMinutePill) {
+        alert('Please select an hour and a minute.');
+        return;
+    }
+
+    const newTime = `${selectedHourPill.dataset.hour}:${selectedMinutePill.dataset.minute}`;
+
+    if (activeTimePickerTarget.input && activeTimePickerTarget.pill) {
+        activeTimePickerTarget.input.value = newTime;
+        activeTimePickerTarget.pill.textContent = newTime;
+    }
+
+    modal.style.display = 'none';
+}
+
+function cancelTimePicker() {
+    const modal = document.getElementById('time-picker-modal');
+    if(modal) modal.style.display = 'none';
+}
+
+export function initTimePickerModal() {
+    dom.shiftTemplateStartTimePill?.addEventListener('click', () => {
+        openTimePicker(dom.shiftTemplateStartTimePill, dom.shiftTemplateStartTimeInput);
+    });
+    dom.shiftTemplateEndTimePill?.addEventListener('click', () => {
+        openTimePicker(dom.shiftTemplateEndTimePill, dom.shiftTemplateEndTimeInput);
+    });
+
+    document.getElementById('time-picker-save-btn')?.addEventListener('click', saveSelectedTime);
+    document.getElementById('time-picker-cancel-btn')?.addEventListener('click', cancelTimePicker);
+}
+
 
 function renderPills(container, items, selectedIds, key, nameProp, activeClass) {
     container.innerHTML = '';

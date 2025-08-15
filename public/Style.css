@@ -1452,3 +1452,43 @@ ul li .item-actions button {
     padding: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
+/* --- Time Picker Modal Styles --- */
+.time-picker-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+.time-picker-section {
+    flex: 1;
+}
+.time-picker-section h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    text-align: center;
+    color: #34495e;
+}
+.time-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+}
+.time-picker-minutes-grid {
+    grid-template-columns: repeat(4, 1fr);
+}
+.time-picker-grid .pill {
+    padding: 8px 5px;
+    border-radius: 4px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #ecf0f1;
+    color: #2c3e50;
+    font-weight: bold;
+    transition: background-color 0.2s, color 0.2s;
+}
+.time-picker-grid .pill:hover {
+    background-color: #d4e6f1;
+}
+.time-picker-grid .pill.active {
+    background-color: #3498db;
+    color: white;
+}
