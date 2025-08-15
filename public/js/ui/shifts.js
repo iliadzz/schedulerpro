@@ -289,40 +289,23 @@ export function renderShiftTemplates() {
                 <span class="template-duration">[${duration}]</span>
             `;
             
+            const deptPills = document.createElement('div');
+            deptPills.className = 'department-pills-container';
+            departments.forEach(dept => {
+                if ((st.departmentIds || []).includes(dept.id)) {
+                    const pill = document.createElement('div');
+                    pill.className = 'pill dept-pill active';
+                    pill.textContent = dept.abbreviation;
+                    deptPills.appendChild(pill);
+                }
+            });
+            infoDiv.appendChild(deptPills);
+            
             infoDiv.appendChild(createItemActionButtons(
                 () => populateShiftTemplateFormForEdit(st), 
                 () => deleteShiftTemplate(st.id)
             ));
             itemDiv.appendChild(infoDiv);
-
-            const pillsContainer = document.createElement('div');
-            pillsContainer.className = 'pills-container';
-
-            const deptPills = document.createElement('div');
-            deptPills.className = 'department-pills-container';
-            departments.forEach(dept => {
-                const pill = document.createElement('div');
-                pill.className = 'pill dept-pill';
-                pill.textContent = dept.abbreviation;
-                pill.dataset.deptId = dept.id;
-                if ((st.departmentIds || []).includes(dept.id)) {
-                    pill.classList.add('active');
-                }
-                pill.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const currentDeptIds = st.departmentIds || [];
-                    const index = currentDeptIds.indexOf(dept.id);
-                    if (index > -1) {
-                        currentDeptIds.splice(index, 1);
-                    } else {
-                        currentDeptIds.push(dept.id);
-                    }
-                    st.departmentIds = currentDeptIds;
-                    saveShiftTemplates();
-                    renderShiftTemplates();
-                });
-                deptPills.appendChild(pill);
-            });
 
             const dayPills = document.createElement('div');
             dayPills.className = 'day-pills-container';
@@ -349,9 +332,7 @@ export function renderShiftTemplates() {
                 dayPills.appendChild(pill);
             });
 
-            pillsContainer.appendChild(deptPills);
-            pillsContainer.appendChild(dayPills);
-            itemDiv.appendChild(pillsContainer);
+            itemDiv.appendChild(dayPills);
             
             deptColumn.appendChild(itemDiv);
         });
