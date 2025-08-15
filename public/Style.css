@@ -272,11 +272,7 @@ ul li .item-actions button {
     gap: 10px; /* This will help space out the new button */
     flex-wrap: wrap;
 }
-.scheduler-controls #current-week-display {
-    font-weight: bold;
-    font-size: 1.1em;
-    color: #2c3e50;
-}
+
 .scheduler-controls input[type="date"] { 
     padding: 8px;
     border: 1px solid #ccc;
@@ -1234,7 +1230,7 @@ ul li .item-actions button {
 
 .pills-container {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 .day-pills-container, .department-pills-container {
@@ -1243,36 +1239,38 @@ ul li .item-actions button {
     flex-wrap: wrap;
 }
 .day-pill, .dept-pill, .inactive-pill, .display-format-pill {
-    min-width: 28px;
-    height: 28px;
-    padding: 0 10px;
-    border-radius: 14px;
+    padding: 10px 18px;
+    border-radius: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85em;
-    font-weight: bold;
+    font-size: 0.95em;
+    font-weight: 500;
     cursor: pointer;
     background-color: #e9ecef;
-    color: #adb5bd;
+    color: #495057;
     transition: background-color 0.2s, color 0.2s, transform 0.2s;
     user-select: none;
+    border: 1px solid #ccc;
 }
 .day-pill:hover, .dept-pill:hover, .inactive-pill:hover, .display-format-pill:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
 }
 .day-pill.active, .dept-pill.active, .inactive-pill.active, .display-format-pill.active {
     background-color: #3498db;
     color: white;
+    border-color: #3498db;
 }
 .dept-pill.active {
     background-color: #27ae60;
+    border-color: #27ae60;
 }
 .department-pills-container .dept-pill {
     cursor: pointer;
 }
 .inactive-pill.active {
     background-color: #f39c12;
+    border-color: #f39c12;
 }
 
 
@@ -1492,28 +1490,35 @@ ul li .item-actions button {
     background-color: #3498db;
     color: white;
 }
-/* --- Pill Style for Date Picker --- */
+/* --- Rounded Rectangle Style for Date Picker --- */
 #week-picker-alt {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    background-color: #e9ecef;
+    background-color: #f8f9fa;
     border: 1px solid #ccc;
-    border-radius: 14px;
+    border-radius: 4px;
     padding: 0 10px;
-    height: 28px;
-    font-size: 0.85em;
-    font-weight: bold;
+    height: 40px;
+    font-size: 0.95em;
+    font-weight: 500;
     color: #495057;
     cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
 #week-picker-alt:hover {
-    background-color: #d4e6f1;
+    background-color: #e9ecef;
+    border-color: #adb5bd;
 }
 
 #week-picker-alt::-webkit-calendar-picker-indicator {
     cursor: pointer;
     opacity: 0.6;
+}
+
+/* --- Right-align department and print buttons --- */
+#scheduler-department-filter-pills {
+    margin-left: auto;
+}
 }
