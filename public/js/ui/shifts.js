@@ -156,7 +156,7 @@ export function resetShiftTemplateForm() {
     renderPills(dom.shiftFormDepartmentPills, departments, [], 'dept', 'abbreviation', 'active');
     renderPills(dom.shiftFormDayPills, daysOrder.map(d => ({id: d, name: dayNames[d]})), daysOrder, 'day', 'name', 'active');
 
-    dom.addShiftTemplateBtn.textContent = getTranslatedString('btnSaveChanges');
+    dom.addShiftTemplateBtn.textContent = 'Save';
     dom.cancelEditShiftTemplateBtn.style.display = 'none';
 }
 
