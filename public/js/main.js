@@ -9,7 +9,7 @@ import { initializeSync, initializeDataListeners } from './firebase/firestore.js
 
 import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, handleSaveDepartment } from './ui/departments.js';
 import { renderRoles, resetRoleForm, handleSaveRole, populateRoleColorPalette, ensureRoleDeptMultiselect, populateRoleDeptCheckboxes } from './ui/roles.js';
-import { renderEmployees, populateTerminationReasons, resetEmployeeForm, handleSaveEmployee, initEmployeeModalListeners, ensureEmployeeDeptMultiselect, populateEmployeeDeptCheckboxes } from './ui/employees.js';
+import { renderEmployees, populateTerminationReasons, resetEmployeeForm, handleSaveEmployee, initEmployeeModalListeners } from './ui/employees.js';
 import { renderShiftTemplates, resetShiftTemplateForm, handleSaveShiftTemplate, ensureShiftDeptMultiselect, populateShiftDeptCheckboxes } from './ui/shifts.js';
 import { renderWeeklySchedule, handlePrevWeek, handleNextWeek, handleThisWeek, handleWeekChange, handlePrint, handleCopyWeek, handleClearWeek } from './ui/scheduler.js';
 import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFile } from './ui/settings.js';
@@ -38,8 +38,6 @@ window.__startApp = function() {
 
     renderDepartments();
 
-    ensureEmployeeDeptMultiselect();
-    populateEmployeeDeptCheckboxes();
     ensureShiftDeptMultiselect();
     populateShiftDeptCheckboxes();
     ensureRoleDeptMultiselect();

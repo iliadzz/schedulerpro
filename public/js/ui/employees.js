@@ -41,6 +41,7 @@ import {
 import { getTranslatedString } from '../i18n.js';
 import { createItemActionButtons, generateId } from '../utils.js';
 
+// --- Module-level state for filters ---
 let selectedDeptIds = ['all'];
 let showInactive = false;
 
@@ -50,7 +51,7 @@ function renderEmployeeFilters() {
 
     container.innerHTML = '';
 
-    // All Departments Pill
+    // "All" Pill
     const allPill = document.createElement('div');
     allPill.className = 'pill dept-pill';
     allPill.textContent = 'All';
@@ -90,10 +91,10 @@ function renderEmployeeFilters() {
         });
         container.appendChild(pill);
     });
-
-    // Inactive Pill
+    
+    // "Inactive" Pill
     const inactivePill = document.createElement('div');
-    inactivePill.className = 'pill';
+    inactivePill.className = 'pill inactive-pill'; // Unique class for styling if needed
     inactivePill.textContent = 'Inactive';
     if (showInactive) {
         inactivePill.classList.add('active');
@@ -266,8 +267,8 @@ export function populateTerminationReasons() {
 
 export function renderEmployees() {
     if (!employeeListUl) return;
-
-    renderEmployeeFilters(); 
+    
+    renderEmployeeFilters();
 
     employeeListUl.innerHTML = '';
     
@@ -307,3 +308,5 @@ export function initEmployeeModalListeners() {
         });
     }
 }
+
+// refactor v.02

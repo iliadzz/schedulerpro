@@ -28,10 +28,8 @@ export const cancelEditRoleBtn = document.getElementById('cancel-edit-role-btn')
 // Employees Tab & Modal
 export const employeeStatusSelect = document.getElementById('employee-status');
 export const terminationDetails = document.getElementById('termination-details');
-export const showInactiveEmployeesCheckbox = document.getElementById('show-inactive-employees');
 export const showAddEmployeeModalBtn = document.getElementById('show-add-employee-modal-btn');
 export const employeeListUl = document.getElementById('employee-list');
-export const employeeListFilter = document.getElementById('employee-list-filter');
 export const employeeFormModal = document.getElementById('employee-form-modal');
 export const employeeModalTitle = document.getElementById('employee-modal-title');
 export const editingEmployeeIdInput = document.getElementById('editing-employee-id');
