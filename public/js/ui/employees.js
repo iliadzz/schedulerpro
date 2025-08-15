@@ -284,13 +284,13 @@ export async function deleteEmployee(userId) {
 }
 
 export function populateTerminationReasons() {
-    if (!employeeTerminationReasonInput) return;
-    employeeTerminationReasonInput.innerHTML = '<option value="">-- Select a Reason --</option>';
+    if (!dom.employeeTerminationReasonInput) return;
+    dom.employeeTerminationReasonInput.innerHTML = '<option value="">-- Select a Reason --</option>';
     terminationReasons.forEach(reason => {
         const option = document.createElement('option');
         option.value = reason;
         option.textContent = reason;
-        employeeTerminationReasonInput.appendChild(option);
+        dom.employeeTerminationReasonInput.appendChild(option);
     });
 }
 
@@ -305,12 +305,12 @@ function populateManagedDepartments() {
 }
 
 export function renderEmployees() {
-    if (!employeeListUl) return;
+    if (!dom.employeeListUl) return;
     
     renderEmployeeFilters();
     renderDisplayFormatPills();
 
-    employeeListUl.innerHTML = '';
+    dom.employeeListUl.innerHTML = '';
     
     let employeesToDisplay = users;
 
@@ -364,29 +364,29 @@ export function renderEmployees() {
         li.appendChild(nameSpan);
 
         const editHandler = () => {
-            if (employeeModalTitle) employeeModalTitle.textContent = getTranslatedString('hdrEditEmployee');
+            if (dom.employeeModalTitle) dom.employeeModalTitle.textContent = getTranslatedString('hdrEditEmployee');
             populateEmployeeFormForEdit(user);
-            if (employeeFormModal) employeeFormModal.style.display = 'block';
+            if (dom.employeeFormModal) dom.employeeFormModal.style.display = 'block';
         };
         const deleteHandler = () => deleteEmployee(user.id);
 
         const actionButtonsDiv = createItemActionButtons(editHandler, deleteHandler);
         actionButtonsDiv.prepend(createVisibilityToggle(user));
         li.appendChild(actionButtonsDiv);
-        employeeListUl.appendChild(li);
+        dom.employeeListUl.appendChild(li);
     });
 }
 
 export function initEmployeeModalListeners() {
-    if (employeeStatusSelect) {
-        employeeStatusSelect.addEventListener('change', () => {
-            terminationDetails.style.display = employeeStatusSelect.value === 'Terminated' ? 'block' : 'none';
+    if (dom.employeeStatusSelect) {
+        dom.employeeStatusSelect.addEventListener('change', () => {
+            dom.terminationDetails.style.display = dom.employeeStatusSelect.value === 'Terminated' ? 'block' : 'none';
         });
     }
-    if (employeeRoleSelect) {
-        employeeRoleSelect.addEventListener('change', () => {
+    if (dom.employeeRoleSelect) {
+        dom.employeeRoleSelect.addEventListener('change', () => {
             if (dom.managedDepartmentsContainer) {
-                dom.managedDepartmentsContainer.style.display = employeeRoleSelect.value === 'Manager' ? 'block' : 'none';
+                dom.managedDepartmentsContainer.style.display = dom.employeeRoleSelect.value === 'Manager' ? 'block' : 'none';
             }
         });
     }
