@@ -4,7 +4,6 @@
 // js/utils.js// js/utils.js
 
 import { currentViewDate } from './state.js';
-import { copyFromWeekPicker } from './dom.js';
 
 export function generateId(prefix = 'id') {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -110,15 +109,6 @@ export function createItemActionButtons(editHandler, deleteHandler) {
     actionsDiv.appendChild(deleteBtn);
 
     return actionsDiv;
-}
-
-export function setDefaultCopyFromDate() {
-    if (copyFromWeekPicker) {
-        let tempDate = new Date(currentViewDate);
-        tempDate.setDate(tempDate.getDate() - 7);
-        const prevWeekDateRange = getWeekRange(tempDate);
-        copyFromWeekPicker.value = formatDate(prevWeekDateRange.start);
-    }
 }
 
 // --- THIS IS THE FIX ---
