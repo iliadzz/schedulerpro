@@ -148,25 +148,25 @@ function createVisibilityToggle(user) {
 }
 
 export function populateEmployeeFormForEdit(user) {
-    editingEmployeeIdInput.value = user.id;
-    employeeFirstNameInput.value = user.firstName || '';
-    employeeLastNameInput.value = user.lastName || '';
-    employeeDisplayNameInput.value = user.displayName || '';
-    employeeDobInput.value = user.dob || '';
-    employeePhoneCodeInput.value = user.phone?.code || '+502';
-    employeePhoneNumberInput.value = user.phone?.number || '';
-    employeeEmailInput.value = user.email || '';
-    employeeAddress1Input.value = user.address?.line1 || '';
-    employeeAddress2Input.value = user.address?.line2 || '';
-    employeeCityInput.value = user.address?.city || '';
-    employeeDepartmentAddressInput.value = user.address?.department || '';
-    employeeCountryInput.value = user.address?.country || '';
-    employeeDepartmentSelect.value = user.departmentId || "";
-    employeeStartDateInput.value = user.startDate || '';
-    employeeVacationBalanceInput.value = user.vacationBalance ?? DEFAULT_VACATION_DAYS;
+    dom.editingEmployeeIdInput.value = user.id;
+    dom.employeeFirstNameInput.value = user.firstName || '';
+    dom.employeeLastNameInput.value = user.lastName || '';
+    dom.employeeDisplayNameInput.value = user.displayName || '';
+    dom.employeeDobInput.value = user.dob || '';
+    dom.employeePhoneCodeInput.value = user.phone?.code || '+502';
+    dom.employeePhoneNumberInput.value = user.phone?.number || '';
+    dom.employeeEmailInput.value = user.email || '';
+    dom.employeeAddress1Input.value = user.address?.line1 || '';
+    dom.employeeAddress2Input.value = user.address?.line2 || '';
+    dom.employeeCityInput.value = user.address?.city || '';
+    dom.employeeDepartmentAddressInput.value = user.address?.department || '';
+    dom.employeeCountryInput.value = user.address?.country || '';
+    dom.employeeDepartmentSelect.value = user.departmentId || "";
+    dom.employeeStartDateInput.value = user.startDate || '';
+    dom.employeeVacationBalanceInput.value = user.vacationBalance ?? DEFAULT_VACATION_DAYS;
     
-    employeeRoleSelect.value = user.role || 'User';
-    employeeRoleSelect.dispatchEvent(new Event('change'));
+    dom.employeeRoleSelect.value = user.role || 'User';
+    dom.employeeRoleSelect.dispatchEvent(new Event('change'));
     
     // Populate managed departments
     const checkboxes = dom.employeeManagedDepartmentsMultiselect.querySelectorAll('input[type="checkbox"]');
@@ -176,83 +176,83 @@ export function populateEmployeeFormForEdit(user) {
 
 
     if (user.status === 'Terminated') {
-        employeeStatusSelect.value = 'Terminated';
-        terminationDetails.style.display = 'block';
-        employeeTerminationDateInput.value = user.terminationDate || '';
-        employeeTerminationReasonInput.value = user.terminationReason || '';
+        dom.employeeStatusSelect.value = 'Terminated';
+        dom.terminationDetails.style.display = 'block';
+        dom.employeeTerminationDateInput.value = user.terminationDate || '';
+        dom.employeeTerminationReasonInput.value = user.terminationReason || '';
     } else {
-        employeeStatusSelect.value = 'Active';
-        terminationDetails.style.display = 'none';
-        employeeTerminationDateInput.value = '';
-        employeeTerminationReasonInput.value = '';
+        dom.employeeStatusSelect.value = 'Active';
+        dom.terminationDetails.style.display = 'none';
+        dom.employeeTerminationDateInput.value = '';
+        dom.employeeTerminationReasonInput.value = '';
     }
-    addEmployeeBtn.textContent = 'Save Changes';
-    cancelEditEmployeeBtn.style.display = 'inline-block';
+    dom.addEmployeeBtn.textContent = 'Save Changes';
+    dom.cancelEditEmployeeBtn.style.display = 'inline-block';
 }
 
 export function resetEmployeeForm() {
-    editingEmployeeIdInput.value = '';
-    employeeFirstNameInput.value = '';
-    employeeLastNameInput.value = '';
-    employeeDisplayNameInput.value = '';
-    employeeDobInput.value = '';
-    employeePhoneCodeInput.value = '+502';
-    employeePhoneNumberInput.value = '';
-    employeeEmailInput.value = '';
-    employeeAddress1Input.value = '';
-    employeeAddress2Input.value = '';
-    employeeCityInput.value = '';
-    employeeDepartmentAddressInput.value = '';
-    employeeCountryInput.value = '';
-    employeeDepartmentSelect.value = "";
-    employeeStartDateInput.value = '';
-    employeeVacationBalanceInput.value = DEFAULT_VACATION_DAYS;
-    employeeStatusSelect.value = 'Active';
-    terminationDetails.style.display = 'none';
-    employeeTerminationDateInput.value = '';
-    employeeTerminationReasonInput.value = '';
+    dom.editingEmployeeIdInput.value = '';
+    dom.employeeFirstNameInput.value = '';
+    dom.employeeLastNameInput.value = '';
+    dom.employeeDisplayNameInput.value = '';
+    dom.employeeDobInput.value = '';
+    dom.employeePhoneCodeInput.value = '+502';
+    dom.employeePhoneNumberInput.value = '';
+    dom.employeeEmailInput.value = '';
+    dom.employeeAddress1Input.value = '';
+    dom.employeeAddress2Input.value = '';
+    dom.employeeCityInput.value = '';
+    dom.employeeDepartmentAddressInput.value = '';
+    dom.employeeCountryInput.value = '';
+    dom.employeeDepartmentSelect.value = "";
+    dom.employeeStartDateInput.value = '';
+    dom.employeeVacationBalanceInput.value = DEFAULT_VACATION_DAYS;
+    dom.employeeStatusSelect.value = 'Active';
+    dom.terminationDetails.style.display = 'none';
+    dom.employeeTerminationDateInput.value = '';
+    dom.employeeTerminationReasonInput.value = '';
     
-    employeeRoleSelect.value = 'User';
-    employeeRoleSelect.dispatchEvent(new Event('change'));
+    dom.employeeRoleSelect.value = 'User';
+    dom.employeeRoleSelect.dispatchEvent(new Event('change'));
     const checkboxes = dom.employeeManagedDepartmentsMultiselect.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(cb => cb.checked = false);
 
-    addEmployeeBtn.textContent = getTranslatedString('btnAddEmployee');
-    cancelEditEmployeeBtn.style.display = 'none';
+    dom.addEmployeeBtn.textContent = getTranslatedString('btnAddEmployee');
+    dom.cancelEditEmployeeBtn.style.display = 'none';
 }
 
 export async function handleSaveEmployee() {
-    const editingId = editingEmployeeIdInput.value;
-    if (!employeeFirstNameInput.value.trim() || !employeeLastNameInput.value.trim()) {
+    const editingId = dom.editingEmployeeIdInput.value;
+    if (!dom.employeeFirstNameInput.value.trim() || !dom.employeeLastNameInput.value.trim()) {
         alert('First Name and Last Name are required.');
         return;
     }
 
     const managedDeptIds = [];
-    if (employeeRoleSelect.value === 'Manager') {
+    if (dom.employeeRoleSelect.value === 'Manager') {
         const checkboxes = dom.employeeManagedDepartmentsMultiselect.querySelectorAll('input[type="checkbox"]:checked');
         checkboxes.forEach(cb => managedDeptIds.push(cb.value));
     }
 
     const employeeData = {
-        firstName: employeeFirstNameInput.value.trim(),
-        lastName: employeeLastNameInput.value.trim(),
-        displayName: employeeDisplayNameInput.value.trim() || `${employeeFirstNameInput.value.trim()} ${employeeLastNameInput.value.trim()}`,
-        dob: employeeDobInput.value,
-        phone: { code: employeePhoneCodeInput.value, number: employeePhoneNumberInput.value.trim() },
-        email: employeeEmailInput.value.trim(),
-        address: { line1: employeeAddress1Input.value.trim(), line2: employeeAddress2Input.value.trim(), city: employeeCityInput.value.trim(), department: employeeDepartmentAddressInput.value.trim(), country: employeeCountryInput.value.trim() },
-        startDate: employeeStartDateInput.value,
-        departmentId: employeeDepartmentSelect.value || null,
-        vacationBalance: parseInt(employeeVacationBalanceInput.value, 10) || 0,
-        status: employeeStatusSelect.value,
-        role: employeeRoleSelect.value,
+        firstName: dom.employeeFirstNameInput.value.trim(),
+        lastName: dom.employeeLastNameInput.value.trim(),
+        displayName: dom.employeeDisplayNameInput.value.trim() || `${dom.employeeFirstNameInput.value.trim()} ${dom.employeeLastNameInput.value.trim()}`,
+        dob: dom.employeeDobInput.value,
+        phone: { code: dom.employeePhoneCodeInput.value, number: dom.employeePhoneNumberInput.value.trim() },
+        email: dom.employeeEmailInput.value.trim(),
+        address: { line1: dom.employeeAddress1Input.value.trim(), line2: dom.employeeAddress2Input.value.trim(), city: dom.employeeCityInput.value.trim(), department: dom.employeeDepartmentAddressInput.value.trim(), country: dom.employeeCountryInput.value.trim() },
+        startDate: dom.employeeStartDateInput.value,
+        departmentId: dom.employeeDepartmentSelect.value || null,
+        vacationBalance: parseInt(dom.employeeVacationBalanceInput.value, 10) || 0,
+        status: dom.employeeStatusSelect.value,
+        role: dom.employeeRoleSelect.value,
         managedDepartmentIds: managedDeptIds
     };
 
     if (employeeData.status === 'Terminated') {
-        employeeData.terminationDate = employeeTerminationDateInput.value || null;
-        employeeData.terminationReason = employeeTerminationReasonInput.value || null;
+        employeeData.terminationDate = dom.employeeTerminationDateInput.value || null;
+        employeeData.terminationReason = dom.employeeTerminationReasonInput.value || null;
     } else {
         employeeData.terminationDate = null;
         employeeData.terminationReason = null;
@@ -268,7 +268,7 @@ export async function handleSaveEmployee() {
     const { renderWeeklySchedule } = await import('./scheduler.js');
     renderWeeklySchedule();
     resetEmployeeForm();
-    if (employeeFormModal) employeeFormModal.style.display = 'none';
+    if (dom.employeeFormModal) dom.employeeFormModal.style.display = 'none';
 }
 
 export async function deleteEmployee(userId) {
@@ -284,8 +284,8 @@ export async function deleteEmployee(userId) {
     renderEmployees();
     const { renderWeeklySchedule } = await import('./scheduler.js');
     renderWeeklySchedule();
-    if (editingEmployeeIdInput.value === userId) {
-        if (employeeFormModal) employeeFormModal.style.display = 'none';
+    if (dom.editingEmployeeIdInput.value === userId) {
+        if (dom.employeeFormModal) dom.employeeFormModal.style.display = 'none';
         resetEmployeeForm();
     }
 }
