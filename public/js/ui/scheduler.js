@@ -32,6 +32,22 @@ function deleteAssignedShift(userId, dateStr, assignmentId) {
     HistoryManager.doAction(command);
 }
 
+function clearEmployeeWeek(userId, weekDates) {
+    if (confirm(`Are you sure you want to clear all shifts for this employee for the week?`)) {
+        weekDates.forEach(date => {
+            const dateStr = formatDate(date);
+            const dayData = scheduleAssignments[`${userId}-${dateStr}`];
+            if (dayData && dayData.shifts) {
+                // Create a copy of the shifts array to iterate over, as deleteAssignedShift will modify the original
+                [...dayData.shifts].forEach(assignment => {
+                    deleteAssignedShift(userId, dateStr, assignment.assignmentId);
+                });
+            }
+        });
+    }
+}
+
+
 export function handlePrevWeek() {
     currentViewDate.setDate(currentViewDate.getDate() - 7);
     saveCurrentViewDate();
@@ -135,8 +151,23 @@ export function renderWeeklySchedule() {
                     <span class="vacation-counter" title="Click to edit vacation days" data-user-id="${user.id}"><i class="fas fa-plane-departure"></i> ${user.vacationBalance}</span>
                 </span>
             </div>
+            <div class="employee-actions">
+                <button class="copy-employee-week-btn" title="Copy Schedule FOR This Employee"><i class="fas fa-copy"></i></button>
+                <button class="clear-employee-week-btn" title="Clear All Shifts FOR This Employee This Week"><i class="fas fa-trash-alt"></i></button>
+            </div>
         `;
         dom.scheduleGridBody.appendChild(userRowLabel);
+
+        userRowLabel.querySelector('.copy-employee-week-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (dom.copyEmployeeModalUserIdInput) dom.copyEmployeeModalUserIdInput.value = user.id;
+            if (dom.copyEmployeeWeekModal) dom.copyEmployeeWeekModal.style.display = 'block';
+        });
+        
+        userRowLabel.querySelector('.clear-employee-week-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearEmployeeWeek(user.id, weekDates);
+        });
 
         weekDates.forEach(date => {
             const cell = document.createElement('div');
