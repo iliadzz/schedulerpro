@@ -50,8 +50,9 @@ function openTimePicker(pillElement, inputElement) {
         hoursContainer.appendChild(hourPill);
     }
 
-    // Populate minutes
-    ['00', '15', '30', '45'].forEach(minute => {
+    // Populate minutes in increments of 5
+    for (let i = 0; i < 60; i += 5) {
+        const minute = String(i).padStart(2, '0');
         const minutePill = document.createElement('div');
         minutePill.className = 'pill';
         minutePill.textContent = minute;
@@ -64,7 +65,7 @@ function openTimePicker(pillElement, inputElement) {
             minutePill.classList.add('active');
         });
         minutesContainer.appendChild(minutePill);
-    });
+    }
 
     modal.style.display = 'block';
 }
