@@ -1252,6 +1252,8 @@ ul li .item-actions button {
     transition: background-color 0.2s, color 0.2s, transform 0.2s;
     user-select: none;
     border: 1px solid #ccc;
+    height: 40px; /* Match button height */
+    box-sizing: border-box;
 }
 .day-pill:hover, .dept-pill:hover, .inactive-pill:hover, .display-format-pill:hover {
     transform: scale(1.05);
@@ -1520,5 +1522,4 @@ ul li .item-actions button {
 /* --- Right-align department and print buttons --- */
 #scheduler-department-filter-pills {
     margin-left: auto;
-}
 }
