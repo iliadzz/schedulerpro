@@ -156,7 +156,7 @@ export function resetShiftTemplateForm() {
     renderPills(dom.shiftFormDepartmentPills, departments, [], 'dept', 'abbreviation', 'active');
     renderPills(dom.shiftFormDayPills, daysOrder.map(d => ({id: d, name: dayNames[d]})), daysOrder, 'day', 'name', 'active');
 
-    dom.addShiftTemplateBtn.textContent = getTranslatedString('btnAddShift');
+    dom.addShiftTemplateBtn.textContent = getTranslatedString('btnSaveChanges');
     dom.cancelEditShiftTemplateBtn.style.display = 'none';
 }
 
@@ -281,13 +281,19 @@ export function renderShiftTemplates() {
             
             const duration = calculateShiftDuration(st.start, st.end).toFixed(1);
             
-            itemDiv.innerHTML = `
-                <div class="template-info">
-                    <span class="template-time">${formatTimeForDisplay(st.start)} - ${formatTimeForDisplay(st.end)}</span>
-                    <span class="template-name-span">| ${st.name}</span>
-                    <span class="template-duration">[${duration}]</span>
-                </div>
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'template-info';
+            infoDiv.innerHTML = `
+                <span class="template-time">${formatTimeForDisplay(st.start)} - ${formatTimeForDisplay(st.end)}</span>
+                <span class="template-name-span">| ${st.name}</span>
+                <span class="template-duration">[${duration}]</span>
             `;
+            
+            infoDiv.appendChild(createItemActionButtons(
+                () => populateShiftTemplateFormForEdit(st), 
+                () => deleteShiftTemplate(st.id)
+            ));
+            itemDiv.appendChild(infoDiv);
 
             const pillsContainer = document.createElement('div');
             pillsContainer.className = 'pills-container';
@@ -346,7 +352,6 @@ export function renderShiftTemplates() {
             pillsContainer.appendChild(deptPills);
             pillsContainer.appendChild(dayPills);
             itemDiv.appendChild(pillsContainer);
-            itemDiv.appendChild(createItemActionButtons(() => populateShiftTemplateFormForEdit(st), () => deleteShiftTemplate(st.id)));
             
             deptColumn.appendChild(itemDiv);
         });

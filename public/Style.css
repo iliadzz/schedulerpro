@@ -1188,43 +1188,37 @@ ul li .item-actions button {
     min-width: auto; 
 }
 
-.department-group {
-    margin-bottom: 25px; 
-}
-
-.department-group h3 {
-    margin-bottom: 15px;
-    color: #2c3e50;
-    border-bottom: 2px solid #e9ecef;
-    padding-bottom: 8px;
-    font-size: 1.2em;
-}
-
-.template-list {
-    list-style: none;
-    padding: 0;
-}
-
 .template-item {
     background: #f9f9f9;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     padding: 10px 15px;
     margin-bottom: 8px;
-    flex-wrap: wrap;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
 .template-info {
-    flex-grow: 1;
     display: flex;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
 }
+.template-info .item-actions {
+    margin-left: auto;
+}
+.template-info .item-actions button {
+    background: none;
+    border: none;
+    padding: 0 5px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+.template-info .item-actions .fa-edit { color: #3498db; }
+.template-info .item-actions .fa-trash-alt { color: #e74c3c; }
+
+
 .template-time {
     font-weight: bold;
     color: #2c3e50;
@@ -1238,10 +1232,13 @@ ul li .item-actions button {
     color: #7f8c8d;
 }
 
+.pills-container {
+    display: flex;
+    gap: 15px;
+}
 .day-pills-container, .department-pills-container {
     display: flex;
     gap: 5px;
-    margin: 0 10px;
 }
 .day-pill, .dept-pill {
     min-width: 28px;
