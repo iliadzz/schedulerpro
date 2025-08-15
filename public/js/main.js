@@ -22,20 +22,12 @@ export function applyRbacPermissions() {
 
     const role = currentUser.role || 'User';
 
-    // Get all elements that have role-based visibility
-    const adminOnlyElements = document.querySelectorAll('.admin-only');
-    const managerOnlyElements = document.querySelectorAll('.manager-only');
+    const show = (selector) => document.querySelectorAll(selector).forEach(el => el.style.removeProperty('display'));
 
-    // Start with a baseline (most restrictive)
-    adminOnlyElements.forEach(el => el.style.display = 'none');
-    managerOnlyElements.forEach(el => el.style.display = 'none');
-
-    // Grant access based on role
-    if (role === 'Manager' || role === 'General Manager') {
-        managerOnlyElements.forEach(el => el.style.display = ''); // or 'block', 'inline-block', etc.
-    }
     if (role === 'General Manager') {
-        adminOnlyElements.forEach(el => el.style.display = '');
+        show('.admin-only, .manager-only');
+    } else if (role === 'Manager') {
+        show('.manager-only');
     }
 }
 
