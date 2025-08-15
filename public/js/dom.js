@@ -75,18 +75,11 @@ export const shiftTemplateListFilter = document.getElementById('shift-template-l
 export const prevWeekBtn = document.getElementById('prev-week-btn');
 export const thisWeekBtn = document.getElementById('this-week-btn');
 export const nextWeekBtn = document.getElementById('next-week-btn');
-export const currentWeekDisplay = document.getElementById('current-week-display');
 export const weekPickerAlt = document.getElementById('week-picker-alt');
 export const scheduleGridBody = document.getElementById('schedule-grid-body');
-export const departmentFilterMultiselect = document.getElementById('department-filter-multiselect');
-export const departmentFilterButton = document.getElementById('department-filter-button');
-export const departmentFilterText = document.getElementById('department-filter-text');
-export const departmentCheckboxesContainer = document.getElementById('department-checkboxes');
 export const printScheduleBtn = document.getElementById('print-schedule-btn');
 
 // Scheduler Actions (Copy/Clear Week, etc.)
-export const copyFromWeekPicker = document.getElementById('copy-from-week-picker');
-export const executeCopyWeekBtn = document.getElementById('execute-copy-week-btn');
 export const clearCurrentWeekBtn = document.getElementById('clear-current-week-btn');
 export const manageEventsBtn = document.getElementById('manage-events-btn');
 

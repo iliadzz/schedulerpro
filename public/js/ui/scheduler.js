@@ -110,8 +110,6 @@ export function renderWeeklySchedule() {
     const week = getWeekRange(currentViewDate);
     const weekDates = getDatesOfWeek(week.start);
     
-    if (dom.currentWeekDisplay) dom.currentWeekDisplay.textContent = `${formatDate(week.start)} - ${formatDate(week.end)}`;
-    
     const dayHeaders = document.querySelectorAll('.schedule-header-row .header-day');
     dayHeaders.forEach((header, index) => {
         if (weekDates[index]) {
