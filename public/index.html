@@ -63,22 +63,19 @@
         <main class="tab-content-container">
             <section id="scheduler-tab" class="tab-content active">
                 <div class="scheduler-controls">
-                    <button id="undo-btn" class="manager-only" title="Undo Last Action (Ctrl+Z)" disabled><i class="fas fa-undo"></i> Undo</button>
-                    <button id="redo-btn" class="manager-only" title="Redo Last Action (Ctrl+Y)" disabled><i class="fas fa-redo"></i> Redo</button>
+                    <button id="undo-btn" class="manager-only" title="Undo Last Action (Ctrl+Z)" disabled><i class="fas fa-undo"></i></button>
+                    <button id="redo-btn" class="manager-only" title="Redo Last Action (Ctrl+Y)" disabled><i class="fas fa-redo"></i></button>
                     <button id="this-week-btn" data-lang-key="btnThisWeek"><i class="fas fa-calendar-day"></i> This Week</button>
                     <button id="prev-week-btn" data-lang-key="btnPrevWeek"><i class="fas fa-arrow-left"></i> Prev</button>
                     <button id="next-week-btn" data-lang-key="btnNextWeek">Next <i class="fas fa-arrow-right"></i></button>
                     <input type="date" id="week-picker-alt" title="Go to week containing this date">
                     
+                    <button id="open-copy-week-modal-btn" class="manager-only" data-lang-key="btnCopyWeek"><i class="fas fa-copy"></i> Copy</button>
+                    <button id="manage-events-btn" class="manager-only" data-lang-key="btnManageEvents">Events</button>
+                    <button id="clear-current-week-btn" class="danger-btn manager-only" title="Clear all assignments for the currently displayed week for visible employees" data-lang-key="btnClearWeek"><i class="fas fa-calendar-times"></i> Clear</button>
+                    
                     <div id="scheduler-department-filter-pills" class="pills-container"></div>
-
-                    <button id="print-schedule-btn" title="Print or save the current schedule as a PDF" data-lang-key="btnPrint"><i class="fas fa-print"></i> Print</button>
-                    
-                    <button id="open-copy-week-modal-btn" class="manager-only" data-lang-key="btnCopyWeek"><i class="fas fa-copy"></i> Copy Week</button>
-                    <button id="manage-events-btn" class="manager-only" data-lang-key="btnManageEvents">Manage Events</button>
-                    
-                    <button id="clear-current-week-btn" class="danger-btn manager-only" title="Clear all assignments for the currently displayed week for visible employees" data-lang-key="btnClearWeek"><i class="fas fa-calendar-times"></i> Clear Week</button>
-                    
+                    <button id="print-schedule-btn" title="Print or save the current schedule as a PDF" data-lang-key="btnPrint"><i class="fas fa-print"></i></button>
                 </div>
                 
                 <div id="schedule-grid-container">
@@ -631,7 +628,7 @@
         </main>
     </div>
     
-    <script type="module" src="js/main.js?v=1.0.28"></script>
+    <script type="module" src="js/main.js?v=1.0.29"></script>
 <script>
   (function(){
     try {
