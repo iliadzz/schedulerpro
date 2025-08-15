@@ -1277,71 +1277,7 @@ ul li .item-actions button {
 }
 
 
-/* === Appended Login Styles (from V2) === */
-#login-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    background-color: #f0f2f5;
-}
 
-.login-box {
-    background: #fff;
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-}
-
-.login-box h2 {
-    margin-top: 0;
-    margin-bottom: 25px;
-    color: #2c3e50;
-}
-
-.login-form-group {
-    margin-bottom: 20px;
-    text-align: left;
-}
-
-.login-form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #333;
-}
-
-.login-form-group input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 1em;
-}
-
-#login-error-message {
-    color: #e74c3c;
-    margin-bottom: 15px;
-    min-height: 1.2em;
-}
-
-.login-actions {
-    display: flex;
-    gap: 15px;
-}
-
-.login-actions button {
-    flex-grow: 1;
-    padding: 12px;
-    font-size: 1.1em;
-}
-
-.app-container { display: none; }
-#login-container { display: flex; }
 
 #employee-form-modal .employee-form-grid {
     max-height: 65vh;
