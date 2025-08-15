@@ -13,6 +13,12 @@ export let restaurantSettings = JSON.parse(localStorage.getItem('restaurantSetti
 // --- Logged-in User State ---
 export let currentUser = null; // To hold the profile of the logged-in user
 
+// Function to set the current user
+export function setCurrentUser(user) {
+    currentUser = user;
+}
+
+
 // --- Save Functions ---
 // Functions to persist the core data collections to localStorage and Firestore.
 export function saveDepartments() {
