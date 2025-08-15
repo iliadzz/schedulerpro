@@ -292,13 +292,28 @@ export function renderShiftTemplates() {
             const deptPills = document.createElement('div');
             deptPills.className = 'department-pills-container';
             departments.forEach(dept => {
+                const pill = document.createElement('div');
+                pill.className = 'pill dept-pill';
+                pill.textContent = dept.abbreviation;
                 if ((st.departmentIds || []).includes(dept.id)) {
-                    const pill = document.createElement('div');
-                    pill.className = 'pill dept-pill active';
-                    pill.textContent = dept.abbreviation;
-                    deptPills.appendChild(pill);
+                    pill.classList.add('active');
                 }
+                pill.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const currentDepts = st.departmentIds || [];
+                    const index = currentDepts.indexOf(dept.id);
+                    if (index > -1) {
+                        currentDepts.splice(index, 1);
+                    } else {
+                        currentDepts.push(dept.id);
+                    }
+                    st.departmentIds = currentDepts;
+                    saveShiftTemplates();
+                    renderShiftTemplates();
+                });
+                deptPills.appendChild(pill);
             });
+
             infoDiv.appendChild(deptPills);
             
             infoDiv.appendChild(createItemActionButtons(

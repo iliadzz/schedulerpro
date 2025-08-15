@@ -1239,6 +1239,7 @@ ul li .item-actions button {
 .day-pills-container, .department-pills-container {
     display: flex;
     gap: 5px;
+    flex-wrap: wrap;
 }
 .day-pill, .dept-pill {
     min-width: 28px;
@@ -1265,6 +1266,9 @@ ul li .item-actions button {
 }
 .dept-pill.active {
     background-color: #27ae60;
+}
+.department-pills-container .dept-pill {
+    cursor: pointer;
 }
 
 

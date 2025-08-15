@@ -503,11 +503,14 @@
 
                 <input type="hidden" id="editing-shift-template-id">
                 <div class="form-group">
-                    <label for="shift-template-name" data-lang-key="lblTemplateName">Template Name:</label>
+                    <label for="shift-template-name">Name:</label>
                     <input type="text" id="shift-template-name" data-lang-key="phShiftTemplateName" placeholder="e.g., Morning Shift">
 
+                    <label>Days:</label>
+                    <div id="shift-form-day-pills" class="day-pills-container"></div>
+
                     <label for="shift-template-department" data-lang-key="lblDept">Department:</label>
-                    <div id="shift-form-department-pills" class="day-pills-container"></div>
+                    <div id="shift-form-department-pills" class="department-pills-container"></div>
 
                     <span class="time-input-label" data-lang-key="lblStartTime">Start Time:</span>
                     <div class="time-input-group">
@@ -529,11 +532,6 @@
                      <button id="cancel-edit-shift-template-btn" class="secondary-btn" style="display:none;" data-lang-key="btnCancelEdit">Cancel Edit</button>
                 </div>
                 
-                <div class="form-group">
-                    <label>Days:</label>
-                    <div id="shift-form-day-pills" class="day-pills-container"></div>
-                </div>
-
                 <hr style="border: 0; height: 1px; background: #e0e0e0; margin: 25px 0;">
 
                 <div id="shift-template-container"></div>
@@ -633,7 +631,7 @@
         </main>
     </div>
     
-    <script type="module" src="js/main.js?v=1.0.4"></script>
+    <script type="module" src="js/main.js?v=1.0.5"></script>
 <script>
   (function(){
     try {
