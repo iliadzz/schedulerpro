@@ -1,16 +1,23 @@
-/* General Styles */
+/*
+ * -------------------------------------------------------------------
+ * 00-TOKENS
+ * Root variables for colors, fonts, spacing, etc.
+ * -------------------------------------------------------------------
+ */
 :root {
   --ctl-fs: 0.95rem;
-  --ctl-lh: 1.2;       /* normalize away from body’s 1.6 */
+  --ctl-lh: 1.2;
   --ctl-py: 10px;
   --ctl-px: 18px;
   --ctl-radius: 4px;
 }
 
-admin-only, .manager-only {
-    display: none;
-}
-
+/*
+ * -------------------------------------------------------------------
+ * 10-BASE
+ * Body, typography, and basic element resets.
+ * -------------------------------------------------------------------
+ */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
@@ -38,7 +45,28 @@ body {
     font-size: 1.8em;
 }
 
-/* Tab Navigation */
+h2 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e0e0e0;
+}
+h2 i {
+    margin-right: 10px;
+    color: #e67e22;
+}
+
+/*
+ * -------------------------------------------------------------------
+ * 20-LAYOUT
+ * Main layout containers, grids, and responsive styles.
+ * -------------------------------------------------------------------
+ */
+.admin-only, .manager-only {
+    display: none;
+}
+
 .tab-navigation {
     display: flex;
     background-color: #34495e;
@@ -72,7 +100,6 @@ body {
     font-weight: bold;
 }
 
-/* Exit Button */
 .exit-button {
     margin-left: auto; /* Pushes the button to the far right */
     background-color: #4b5563; /* A dark grey */
@@ -91,8 +118,6 @@ body {
     margin-right: 8px;
 }
 
-
-/* Tab Content */
 .tab-content-container {
     padding: 25px;
 }
@@ -111,25 +136,10 @@ body {
     to { opacity: 1; }
 }
 
-h2 {
-    color: #2c3e50;
-    margin-top: 0;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #e0e0e0;
-}
-h2 i {
-    margin-right: 10px;
-    color: #e67e22;
-}
-
-/* Section Header for moving buttons to top right */
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    /* border-bottom: 2px solid #e0e0e0; */ /* Removed to avoid double-underline */
-    /* padding-bottom: 10px; */
     margin-bottom: 20px;
 }
 .section-header h2 {
@@ -141,152 +151,19 @@ h2 i {
     margin-left: 10px;
 }
 
+/*
+ * -------------------------------------------------------------------
+ * 40-PAGES
+ * Styles specific to a single page or tab.
+ * -------------------------------------------------------------------
+ */
 
-/* Form Groups and Inputs */
-.form-group {
-    margin-bottom: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-}
-
-.form-group label {
-    font-weight: bold;
-    margin-right: 5px;
-    min-width: 100px;
-}
-
-
-.form-group input[type="text"],
-.form-group input[type="time"],
-.form-group input[type="date"],
-.form-group input[type="color"],
-.form-group input[type="number"],
-.form-group input[type="tel"],
-.form-group input[type="email"],
-.form-group select {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.95em;
-    min-width: 180px;
-    flex-grow: 1;
-}
-#employee-vacation-balance {
-    flex-grow: 0.2;
-    min-width: 80px;
-}
-.form-group input[type="color"] {
-    padding: 2px;
-    height: 38px;
-    min-width: 50px;
-    flex-grow: 0;
-}
-
-/* NEW SHARED RULE FOR BUTTONS AND PILLS */
-button, .day-pill, .dept-pill, .inactive-pill, .display-format-pill {
-    font-size: var(--ctl-fs);
-    line-height: var(--ctl-lh);
-    padding: var(--ctl-py) var(--ctl-px);
-    border-radius: var(--ctl-radius);
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Add near other pill styles or at the end of the file */
-.pill:focus-visible,
-.day-pill:focus-visible, 
-.dept-pill:focus-visible { 
-    outline: 2px solid #1d6fa5; 
-    outline-offset: 2px; 
-}
-
-/* UPDATED BUTTON RULE */
-button {
-    background-color: #3498db;
-    color: white;
-    border: 1px solid transparent; /* Use transparent border for alignment */
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-button i {
-    margin-right: 5px;
-}
-
-button:hover {
-    background-color: #2980b9;
-}
-
-button:disabled {
-    background-color: #bdc3c7;
-    cursor: not-allowed;
-}
-button:disabled:hover {
-    background-color: #bdc3c7;
-}
-
-button.danger-btn {
-    background-color: #e74c3c;
-}
-button.danger-btn:hover {
-    background-color: #c0392b;
-}
-button.secondary-btn {
-    background-color: #95a5a6;
-    color: #2c3e50;
-}
-button.secondary-btn:hover {
-    background-color: #7f8c8d;
-}
-button.secondary-btn.active {
-    background-color: #3498db;
-    color: white;
-    font-weight: bold;
-}
-
-
-/* Lists (for Departments, Roles, Users) */
-ul {
-    list-style: none;
-    padding: 0;
-}
-
-ul li {
-    background: #f9f9f9;
-    border: 1px solid #e0e0e0;
-    padding: 10px 15px;
-    margin-bottom: 8px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-ul li .role-color-swatch {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border-radius: 3px;
-    margin-right: 10px;
-    border: 1px solid #ccc;
-    vertical-align: middle;
-}
-
-ul li .item-actions button {
-    margin-left: 8px;
-    padding: 5px 8px;
-    font-size: 0.8em;
-}
-
-/* Scheduler Specific Styles */
+/* --- Scheduler Specific Styles --- */
 .scheduler-controls {
     margin-bottom: 20px;
     display: flex;
     align-items: center;
-    gap: 10px; /* This will help space out the new button */
+    gap: 10px;
     flex-wrap: wrap;
 }
 
@@ -308,57 +185,6 @@ ul li .item-actions button {
     font-size: 0.95em;
     background-color: white;
 }
-
-/* --- Multi-select Dropdown Styles --- */
-.multiselect {
-    position: relative;
-    user-select: none;
-    min-width: 200px;
-}
-.select-box {
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.95em;
-    background-color: white;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.select-box.expanded {
-    border-color: #3498db;
-}
-.checkboxes-container {
-    display: none;
-    position: absolute;
-    top: 105%;
-    left: 0;
-    width: 100%;
-    border: 1px solid #ccc;
-    background: #fff;
-    z-index: 100;
-    max-height: 250px;
-    overflow-y: auto;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-.checkboxes-container.visible {
-    display: block;
-}
-.checkboxes-container label {
-    display: block;
-    padding: 8px 12px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    font-weight: normal;
-}
-.checkboxes-container label:hover {
-    background-color: #f0faff;
-}
-.checkboxes-container label input {
-    margin-right: 8px;
-}
-
 
 #schedule-grid-container {
     display: grid;
@@ -516,6 +342,9 @@ ul li .item-actions button {
 .day-cell:last-child {
     border-right: none;
 }
+.day-cell.can-assign:hover {
+    background-color: #f0faff;
+}
 .day-cell.drag-over {
     background-color: #c8e6c9 !important;
     border: 2px dashed #4CAF50;
@@ -630,37 +459,18 @@ ul li .item-actions button {
 .time-off-item .time-off-reason {
     display: block;
 }
+.time-off-item .time-off-count {
+    font-size: 0.9em;
+    font-weight: normal;
+    opacity: 0.9;
+    margin-left: 5px;
+}
 .time-off-item .delete-assigned-shift-btn {
     color: #f8f9fa;
 }
 .time-off-item:hover .delete-assigned-shift-btn {
     background-color: rgba(0,0,0,0.2);
     color: #fff;
-}
-
-
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 100;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.5);
-}
-
-.modal-content {
-    background-color: #fefefe;
-    margin: 10% auto;
-    padding: 25px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 550px;
-    border-radius: 8px;
-    position: relative;
 }
 
 /* MODIFICATION: Wider modal for employee form */
@@ -676,29 +486,6 @@ ul li .item-actions button {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px 30px;
-}
-
-/* Event Color Palette */
-.color-palette {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 5px;
-    margin-top: 5px;
-}
-.color-swatch {
-    width: 25px;
-    height: 25px;
-    border-radius: 4px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: transform 0.2s, border-color 0.2s;
-}
-.color-swatch:hover {
-    transform: scale(1.1);
-}
-.color-swatch.selected {
-    border-color: #2c3e50;
-    box-shadow: 0 0 5px rgba(0,0,0,0.3);
 }
 
 /* Styling for the new event list */
@@ -718,34 +505,12 @@ ul li .item-actions button {
     font-size: 0.8em;
 }
 
-
-.close-modal-btn {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close-modal-btn:hover,
-.close-modal-btn:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-
 #assign-modal-paste-option p {
     margin-top: 0;
     margin-bottom: 10px;
 }
 #assign-modal-paste-option button {
     margin-right: 10px;
-}
-
-.modal-actions {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
 }
 
 /* --- Employee Form Layout --- */
@@ -1276,73 +1041,6 @@ ul li .item-actions button {
     border-color: #f39c12;
 }
 
-
-/* === Appended Login Styles (from V2) === */
-#login-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    background-color: #f0f2f5;
-}
-
-.login-box {
-    background: #fff;
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-}
-
-.login-box h2 {
-    margin-top: 0;
-    margin-bottom: 25px;
-    color: #2c3e50;
-}
-
-.login-form-group {
-    margin-bottom: 20px;
-    text-align: left;
-}
-
-.login-form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #333;
-}
-
-.login-form-group input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 1em;
-}
-
-#login-error-message {
-    color: #e74c3c;
-    margin-bottom: 15px;
-    min-height: 1.2em;
-}
-
-.login-actions {
-    display: flex;
-    gap: 15px;
-}
-
-.login-actions button {
-    flex-grow: 1;
-    padding: 12px;
-    font-size: 1.1em;
-}
-
-.app-container { display: none; }
-#login-container { display: flex; }
-
 #employee-form-modal .employee-form-grid {
     max-height: 65vh;
     overflow-y: auto;
@@ -1373,18 +1071,6 @@ ul li .item-actions button {
 #employee-form-modal .form-group select,
 #employee-form-modal .phone-input-group {
     width: 100%;
-}
-
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
 }
 
 .time-input-group {
@@ -1453,7 +1139,7 @@ ul li .item-actions button {
     padding: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-/* --- Time Picker Modal Styles --- */
+
 /* --- Rounded Rectangle Style for Date Picker --- */
 #week-picker-alt {
     -webkit-appearance: none;
@@ -1484,4 +1170,22 @@ ul li .item-actions button {
 /* --- Right-align department and print buttons --- */
 #scheduler-department-filter-pills {
     margin-left: auto;
+}
+
+/*
+ * -------------------------------------------------------------------
+ * 99-UTILITIES
+ * Helper classes like .sr-only for accessibility.
+ * -------------------------------------------------------------------
+ */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
 }
