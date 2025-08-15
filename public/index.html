@@ -71,19 +71,11 @@
                     <button id="next-week-btn" data-lang-key="btnNextWeek">Next <i class="fas fa-arrow-right"></i></button>
                     <input type="date" id="week-picker-alt" title="Go to week containing this date">
                     
-                    <div class="multiselect" id="department-filter-multiselect">
-                        <div class="select-box" id="department-filter-button">
-                            <span id="department-filter-text">All Departments</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                        <div id="department-checkboxes" class="checkboxes-container">
-                            </div>
-                    </div>
+                    <div id="scheduler-department-filter-pills" class="pills-container"></div>
 
                     <button id="print-schedule-btn" title="Print or save the current schedule as a PDF" data-lang-key="btnPrint"><i class="fas fa-print"></i> Print</button>
                     
-                    <input type="date" id="copy-from-week-picker" class="manager-only" title="Select any date within the source week" style="margin-left: 15px;">
-                    <button id="execute-copy-week-btn" class="manager-only" title="Copy schedule from the selected source week to the current view" data-lang-key="btnCopyWeek"><i class="fas fa-copy"></i> Copy Week</button>
+                    <button id="open-copy-week-modal-btn" class="manager-only" data-lang-key="btnCopyWeek"><i class="fas fa-copy"></i> Copy Week</button>
                     <button id="manage-events-btn" class="manager-only" data-lang-key="btnManageEvents">Manage Events</button>
                     
                     <button id="clear-current-week-btn" class="danger-btn manager-only" title="Clear all assignments for the currently displayed week for visible employees" data-lang-key="btnClearWeek"><i class="fas fa-calendar-times"></i> Clear Week</button>
@@ -207,18 +199,17 @@
                     </div>
                 </div>
 
-                <div id="copy-employee-week-modal" class="modal">
+                <div id="copy-week-modal" class="modal">
                     <div class="modal-content">
                         <span class="close-modal-btn">&times;</span>
-                        <h3 id="copy-employee-modal-title">Copy Employee Schedule</h3>
-                        <p data-lang-key="modalCopyEmployeeDesc">Select any date within the source week you want to copy the schedule from.</p>
+                        <h3 data-lang-key="modalCopyWeekTitle">Copy Week Schedule</h3>
+                        <p data-lang-key="modalCopyWeekDesc">Select any date within the source week to copy the schedule from.</p>
                         <div class="form-group">
-                            <label for="copy-employee-from-date" data-lang-key="lblSourceWeek">Source Week:</label>
-                            <input type="date" id="copy-employee-from-date">
+                            <label for="copy-week-source-date" data-lang-key="lblSourceWeek">Source Week:</label>
+                            <input type="date" id="copy-week-source-date">
                         </div>
-                        <input type="hidden" id="copy-employee-modal-user-id">
                         <div class="modal-actions">
-                            <button id="execute-copy-employee-btn" data-lang-key="btnCopySchedule">Copy Schedule</button>
+                            <button id="confirm-copy-week-btn" data-lang-key="btnCopySchedule">Copy Schedule</button>
                         </div>
                     </div>
                 </div>
@@ -545,25 +536,6 @@
                 </div>
 
                 <div id="shift-template-container"></div>
-                <div id="time-picker-modal" class="modal">
-                    <div class="modal-content" style="max-width: 400px;">
-                        <h3 data-lang-key="modalSelectTime">Select Time</h3>
-                        <div class="time-picker-container">
-                            <div class="time-picker-section">
-                                <h4>Hour</h4>
-                                <div id="time-picker-hours" class="time-picker-grid"></div>
-                            </div>
-                            <div class="time-picker-section">
-                                <h4>Minute</h4>
-                                <div id="time-picker-minutes" class="time-picker-grid time-picker-minutes-grid"></div>
-                            </div>
-                        </div>
-                        <div class="modal-actions">
-                            <button id="time-picker-cancel-btn" class="secondary-btn">Cancel</button>
-                            <button id="time-picker-save-btn">Save</button>
-                        </div>
-                    </div>
-                </div>
             </section>
 
             <section id="settings-tab" class="tab-content">
@@ -660,7 +632,7 @@
         </main>
     </div>
     
-    <script type="module" src="js/main.js?v=1.0.24"></script>
+    <script type="module" src="js/main.js?v=1.0.26"></script>
 <script>
   (function(){
     try {

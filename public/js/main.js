@@ -12,7 +12,7 @@ import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, hand
 import { renderRoles, resetRoleForm, handleSaveRole, populateRoleColorPalette, ensureRoleDeptMultiselect, populateRoleDeptCheckboxes } from './ui/roles.js';
 import { renderEmployees, populateTerminationReasons, resetEmployeeForm, handleSaveEmployee, initEmployeeModalListeners } from './ui/employees.js';
 import { renderShiftTemplates, resetShiftTemplateForm, handleSaveShiftTemplate, ensureShiftDeptMultiselect, populateShiftDeptCheckboxes, initTimePickerModal } from './ui/shifts.js';
-import { renderWeeklySchedule, handlePrevWeek, handleNextWeek, handleThisWeek, handleWeekChange, handlePrint, handleCopyWeek, handleClearWeek } from './ui/scheduler.js';
+import { renderWeeklySchedule, handlePrevWeek, handleNextWeek, handleThisWeek, handleWeekChange, handlePrint, handleCopyWeek, executeCopyWeek, handleClearWeek } from './ui/scheduler.js';
 import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFile } from './ui/settings.js';
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
@@ -121,17 +121,16 @@ window.__startApp = function() {
     dom.thisWeekBtn.addEventListener('click', handleThisWeek);
     dom.weekPickerAlt.addEventListener('change', handleWeekChange);
     dom.printScheduleBtn.addEventListener('click', handlePrint);
-    dom.executeCopyWeekBtn.addEventListener('click', handleCopyWeek);
+    
+    const openCopyWeekModalBtn = document.getElementById('open-copy-week-modal-btn');
+    if (openCopyWeekModalBtn) openCopyWeekModalBtn.addEventListener('click', handleCopyWeek);
+    
+    const confirmCopyWeekBtn = document.getElementById('confirm-copy-week-btn');
+    if (confirmCopyWeekBtn) confirmCopyWeekBtn.addEventListener('click', executeCopyWeek);
+
     dom.clearCurrentWeekBtn.addEventListener('click', handleClearWeek);
     dom.manageEventsBtn.addEventListener('click', showEventsModal);
-    if(dom.departmentFilterButton) {
-        dom.departmentFilterButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dom.departmentCheckboxesContainer.classList.toggle('visible');
-            dom.departmentFilterButton.classList.toggle('expanded');
-        });
-    }
-
+    
     dom.saveRestaurantSettingsBtn.addEventListener('click', handleSaveSettings);
     dom.backupAllDataBtn.addEventListener('click', handleFullBackup);
     dom.restoreDataInput.addEventListener('change', handleRestoreFile);
@@ -169,10 +168,6 @@ window.__startApp = function() {
     window.addEventListener('click', (event) => {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
-        }
-        if (dom.departmentFilterMultiselect && !dom.departmentFilterMultiselect.contains(event.target)) {
-            dom.departmentCheckboxesContainer.classList.remove('visible');
-            dom.departmentFilterButton.classList.remove('expanded');
         }
         const roleColorPopup = document.getElementById('role-color-popup');
         if (roleColorPopup && !roleColorPopup.contains(event.target) && event.target !== dom.roleColorPreview) {

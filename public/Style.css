@@ -1492,3 +1492,28 @@ ul li .item-actions button {
     background-color: #3498db;
     color: white;
 }
+/* --- Pill Style for Date Picker --- */
+#week-picker-alt {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: #e9ecef;
+    border: 1px solid #ccc;
+    border-radius: 14px;
+    padding: 0 10px;
+    height: 28px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: #495057;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+#week-picker-alt:hover {
+    background-color: #d4e6f1;
+}
+
+#week-picker-alt::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+}

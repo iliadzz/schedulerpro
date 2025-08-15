@@ -41,67 +41,41 @@ export function handleSaveDepartment() {
 }
 
 function populateDepartmentFilter() {
-    if (!dom.departmentCheckboxesContainer) return;
+    const container = document.getElementById('scheduler-department-filter-pills');
+    if (!container) return;
 
-    const savedStateJSON = localStorage.getItem('schedulerDepartmentFilterState');
-    const savedState = savedStateJSON ? JSON.parse(savedStateJSON) : null;
-    const isChecked = (value, defaultChecked = true) => {
-        if (!savedState) return defaultChecked;
-        const savedItem = savedState.find(s => s.value === value);
-        return savedItem ? savedItem.checked : defaultChecked;
-    };
+    container.innerHTML = '';
 
-    dom.departmentCheckboxesContainer.innerHTML = '';
+    // "All" Pill
+    const allPill = document.createElement('div');
+    allPill.className = 'pill dept-pill active';
+    allPill.textContent = 'All';
+    allPill.dataset.id = 'all';
+    allPill.addEventListener('click', () => handleDepartmentFilterChange('all'));
+    container.appendChild(allPill);
 
-    const allLabel = document.createElement('label');
-    allLabel.innerHTML = `<input type="checkbox" value="all" ${isChecked('all') ? 'checked' : ''}> <strong data-lang-key="optAllDepts">${getTranslatedString('optAllDepts')}</strong>`;
-    dom.departmentCheckboxesContainer.appendChild(allLabel);
-
+    // Department Pills
     departments.forEach(dept => {
-        const deptLabel = document.createElement('label');
-        deptLabel.innerHTML = `<input type="checkbox" value="${dept.id}" ${isChecked(dept.id) ? 'checked' : ''}> ${dept.name}`;
-        dom.departmentCheckboxesContainer.appendChild(deptLabel);
-    });
-
-    dom.departmentCheckboxesContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', handleDepartmentFilterChange);
+        const pill = document.createElement('div');
+        pill.className = 'pill dept-pill';
+        pill.textContent = dept.abbreviation;
+        pill.dataset.id = dept.id;
+        pill.addEventListener('click', () => handleDepartmentFilterChange(dept.id));
+        container.appendChild(pill);
     });
 }
 
-function handleDepartmentFilterChange(e = null) {
-    const checkboxes = dom.departmentCheckboxesContainer.querySelectorAll('input[type="checkbox"]');
-    if (checkboxes.length === 0) return;
-    
-    const allDeptsCheckbox = checkboxes[0];
+function handleDepartmentFilterChange(selectedId) {
+    const pills = document.querySelectorAll('#scheduler-department-filter-pills .pill');
+    pills.forEach(pill => {
+        if (pill.dataset.id === selectedId) {
+            pill.classList.add('active');
+        } else {
+            pill.classList.remove('active');
+        }
+    });
 
-    if (e && e.target.value === 'all') {
-        checkboxes.forEach(cb => cb.checked = allDeptsCheckbox.checked);
-    } else if (checkboxes.length > 1) {
-        const allOthersChecked = Array.from(checkboxes).slice(1).every(cb => cb.checked);
-        allDeptsCheckbox.checked = allOthersChecked;
-    }
-
-    if (e) {
-        const checkboxState = Array.from(checkboxes).map(cb => ({ value: cb.value, checked: cb.checked }));
-        localStorage.setItem('schedulerDepartmentFilterState', JSON.stringify(checkboxState));
-    }
-
-    let selectedDepartmentIds = Array.from(checkboxes).filter(cb => cb.checked && cb.value !== 'all').map(cb => cb.value);
-
-    if (allDeptsCheckbox.checked) {
-        selectedDepartmentIds = ['all'];
-        dom.departmentFilterText.textContent = getTranslatedString('optAllDepts');
-    } else if (selectedDepartmentIds.length === 0) {
-        dom.departmentFilterText.textContent = "None selected";
-        selectedDepartmentIds = ['none'];
-    } else if (selectedDepartmentIds.length === 1) {
-        const dept = departments.find(d => d.id === selectedDepartmentIds[0]);
-        dom.departmentFilterText.textContent = dept ? dept.name : "1 selected";
-    } else {
-        dom.departmentFilterText.textContent = `${selectedDepartmentIds.length} departments`;
-    }
-
-    window.selectedDepartmentIds = selectedDepartmentIds;
+    window.selectedDepartmentIds = [selectedId];
     renderWeeklySchedule();
 }
 
@@ -200,6 +174,6 @@ export function renderDepartments() {
 }
 
 export function initializeSchedulerFilter() {
-    if (!dom.departmentCheckboxesContainer) return;
-    handleDepartmentFilterChange();
+    populateDepartmentFilter();
+    handleDepartmentFilterChange('all');
 }

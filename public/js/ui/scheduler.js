@@ -82,8 +82,21 @@ export function handlePrint() {
 }
 
 export function handleCopyWeek() {
-    alert("Copy week logic needs to be fully wired up here.");
+    const copyWeekModal = document.getElementById('copy-week-modal');
+    if (copyWeekModal) {
+        copyWeekModal.style.display = 'block';
+    }
 }
+
+export function executeCopyWeek() {
+    // This is a placeholder for the actual copy logic.
+    alert("Executing the copy week function!");
+    const copyWeekModal = document.getElementById('copy-week-modal');
+    if (copyWeekModal) {
+        copyWeekModal.style.display = 'none';
+    }
+}
+
 export function handleClearWeek() {
     alert("Clear week logic needs to be fully wired up here.");
 }
