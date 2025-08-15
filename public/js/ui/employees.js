@@ -44,6 +44,7 @@ import { createItemActionButtons, generateId } from '../utils.js';
 // --- Module-level state for filters ---
 let selectedDeptIds = ['all'];
 let showInactive = false;
+let displayFormat = 'LF'; // LF, FL, DN
 
 function renderEmployeeFilters() {
     const container = document.getElementById('employee-filter-pills');
@@ -51,7 +52,6 @@ function renderEmployeeFilters() {
 
     container.innerHTML = '';
 
-    // "All" Pill
     const allPill = document.createElement('div');
     allPill.className = 'pill dept-pill';
     allPill.textContent = 'All';
@@ -65,7 +65,6 @@ function renderEmployeeFilters() {
     });
     container.appendChild(allPill);
 
-    // Department Pills
     departments.forEach(dept => {
         const pill = document.createElement('div');
         pill.className = 'pill dept-pill';
@@ -92,10 +91,9 @@ function renderEmployeeFilters() {
         container.appendChild(pill);
     });
     
-    // "Inactive" Pill
     const inactivePill = document.createElement('div');
-    inactivePill.className = 'pill inactive-pill'; // Unique class for styling if needed
-    inactivePill.textContent = 'Inactive';
+    inactivePill.className = 'pill inactive-pill';
+    inactivePill.textContent = 'INACTIVE';
     if (showInactive) {
         inactivePill.classList.add('active');
     }
@@ -104,6 +102,33 @@ function renderEmployeeFilters() {
         renderEmployees();
     });
     container.appendChild(inactivePill);
+}
+
+function renderDisplayFormatPills() {
+    const container = document.getElementById('employee-display-pills');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const formats = [
+        { id: 'LF', text: 'Last, First' },
+        { id: 'FL', text: 'First Last' },
+        { id: 'DN', text: 'Display Name' }
+    ];
+
+    formats.forEach(format => {
+        const pill = document.createElement('div');
+        pill.className = 'pill display-format-pill';
+        pill.textContent = format.id;
+        pill.title = format.text;
+        if (displayFormat === format.id) {
+            pill.classList.add('active');
+        }
+        pill.addEventListener('click', () => {
+            displayFormat = format.id;
+            renderEmployees();
+        });
+        container.appendChild(pill);
+    });
 }
 
 
@@ -269,44 +294,42 @@ export function renderEmployees() {
     if (!employeeListUl) return;
     
     renderEmployeeFilters();
+    renderDisplayFormatPills();
 
     employeeListUl.innerHTML = '';
     
-    const employeesToDisplay = users.filter(user => {
+    let employeesToDisplay = users.filter(user => {
         const statusMatch = showInactive ? true : (user.status === 'Active' || user.status === undefined);
         const deptMatch = selectedDeptIds.includes('all') || selectedDeptIds.includes(user.departmentId);
         return statusMatch && deptMatch;
+    });
+
+    employeesToDisplay.sort((a, b) => {
+        if (displayFormat === 'LF') {
+            return (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || '');
+        }
+        if (displayFormat === 'FL') {
+            return (a.firstName || '').localeCompare(b.firstName || '') || (a.lastName || '').localeCompare(b.lastName || '');
+        }
+        return (a.displayName || '').localeCompare(b.displayName || '');
     });
 
     employeesToDisplay.forEach(user => {
         const li = document.createElement('li');
         const nameSpan = document.createElement('span');
         const dept = departments.find(d => d.id === user.departmentId);
-        const deptName = dept ? dept.name : getTranslatedString('optNoDept');
-        const statusIndicator = (user.status === 'Terminated') ? ' (Inactive)' : '';
-        const employeeName = user.displayName || `${user.firstName} ${user.lastName}`;
-        nameSpan.textContent = `${employeeName.trim()} (${deptName})${statusIndicator}`;
-        if (user.status === 'Terminated') li.style.opacity = '0.6';
-        li.appendChild(nameSpan);
-        const editHandler = () => {
-            if (employeeModalTitle) employeeModalTitle.textContent = getTranslatedString('hdrEditEmployee');
-            populateEmployeeFormForEdit(user);
-            if (employeeFormModal) employeeFormModal.style.display = 'block';
-        };
-        const deleteHandler = () => deleteEmployee(user.id);
-        const actionButtonsDiv = createItemActionButtons(editHandler, deleteHandler);
-        actionButtonsDiv.prepend(createVisibilityToggle(user));
-        li.appendChild(actionButtonsDiv);
-        employeeListUl.appendChild(li);
-    });
-}
+        const deptAbbr = dept ? `[${dept.abbreviation}]` : '';
 
-export function initEmployeeModalListeners() {
-    if (employeeStatusSelect) {
-        employeeStatusSelect.addEventListener('change', () => {
-            terminationDetails.style.display = employeeStatusSelect.value === 'Terminated' ? 'block' : 'none';
-        });
-    }
-}
-
-// refactor v.02
+        let employeeName;
+        switch (displayFormat) {
+            case 'LF':
+                employeeName = `${user.lastName || ''}, ${user.firstName || ''}`;
+                break;
+            case 'FL':
+                employeeName = `${user.firstName || ''} ${user.lastName || ''}`;
+                break;
+            default:
+                employeeName = user.displayName || `${user.firstName} ${user.lastName}`;
+        }
+        
+        const statusIndicator
