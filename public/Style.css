@@ -1245,13 +1245,13 @@ ul li .item-actions button {
     align-items: center;
     justify-content: center;
     font-size: 0.95em;
-    font-weight: 500;
+    font-weight: normal;
     cursor: pointer;
-    background-color: #e9ecef;
+    background-color: #f8f9fa;
     color: #495057;
     transition: background-color 0.2s, color 0.2s, transform 0.2s;
     user-select: none;
-    border: 1px solid #ccc;
+    border: none;
 }
 .day-pill:hover, .dept-pill:hover, .inactive-pill:hover, .display-format-pill:hover {
     transform: scale(1.05);
