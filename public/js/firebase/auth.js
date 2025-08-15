@@ -25,16 +25,20 @@ export function setupAuthListeners() {
 
     // Listen for changes in the user's login state
     if (window.auth) {
-        window.auth.onAuthStateChanged(user => {
+        window.auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // User is signed in. Find their profile in our database.
-                const userProfile = users.find(u => u.email.toLowerCase() === user.email.toLowerCase());
-                
-                if (userProfile) {
-                    setCurrentUser(userProfile);
-                } else {
-                    // If no profile, default to a restricted "User" role to prevent unauthorized access.
-                    console.warn(`No profile found for ${user.email}, defaulting to restricted view.`);
+                // User is signed in. Directly fetch their profile from Firestore.
+                try {
+                    const userQuery = await window.db.collection('users').where('email', '==', user.email).limit(1).get();
+                    if (!userQuery.empty) {
+                        const userProfile = { id: userQuery.docs[0].id, ...userQuery.docs[0].data() };
+                        setCurrentUser(userProfile);
+                    } else {
+                        console.warn(`No profile found for ${user.email}, defaulting to restricted view.`);
+                        setCurrentUser({ email: user.email, role: 'User' });
+                    }
+                } catch (error) {
+                    console.error("Error fetching user profile:", error);
                     setCurrentUser({ email: user.email, role: 'User' });
                 }
 
