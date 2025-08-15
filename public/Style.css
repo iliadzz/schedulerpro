@@ -1,4 +1,12 @@
 /* General Styles */
+:root {
+  --ctl-fs: 0.95rem;
+  --ctl-lh: 1.2;       /* normalize away from body’s 1.6 */
+  --ctl-py: 10px;
+  --ctl-px: 18px;
+  --ctl-radius: 4px;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
@@ -185,23 +193,27 @@ h2 i {
     flex-grow: 0;
 }
 
+/* NEW SHARED RULE FOR BUTTONS AND PILLS */
+button, .day-pill, .dept-pill, .inactive-pill, .display-format-pill {
+    font-size: var(--ctl-fs);
+    line-height: var(--ctl-lh);
+    padding: var(--ctl-py) var(--ctl-px);
+    border-radius: var(--ctl-radius);
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 
+/* UPDATED BUTTON RULE */
 button {
     background-color: #3498db;
     color: white;
-    padding: 0 18px; /* Vertical padding removed */
-    border: 1px solid transparent; /* Added transparent border */
-    border-radius: 4px;
+    border: 1px solid transparent; /* Use transparent border for alignment */
     cursor: pointer;
-    font-size: 0.95em;
     transition: background-color 0.2s;
-    height: 40px; /* Explicit height */
-    box-sizing: border-box; /* Ensures padding & border are included in height */
-    display: inline-flex; /* Align content vertically */
-    align-items: center; /* Align content vertically */
-    justify-content: center; /* Align content horizontally */
-    font-weight: normal; /* Unify font weight */
 }
+
 button i {
     margin-right: 5px;
 }
@@ -1244,23 +1256,16 @@ ul li .item-actions button {
     gap: 5px;
     flex-wrap: wrap;
 }
+/* UPDATED PILL RULE */
 .day-pill, .dept-pill, .inactive-pill, .display-format-pill {
-    padding: 0 18px; /* Vertical padding removed */
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.95em;
-    font-weight: normal; /* Unify font weight */
     cursor: pointer;
     background-color: #e9ecef;
     color: #495057;
     transition: background-color 0.2s, color 0.2s, transform 0.2s;
     user-select: none;
     border: 1px solid #ccc;
-    height: 40px; /* Explicit height */
-    box-sizing: border-box; /* Ensures padding & border are included in height */
 }
+
 .day-pill:hover, .dept-pill:hover, .inactive-pill:hover, .display-format-pill:hover {
     transform: scale(1.05);
 }
