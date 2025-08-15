@@ -15,11 +15,20 @@
     ],
     "headers": [
       {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=30, s-maxage=30"
+          }
+        ]
+      },
+      {
         "source": "**",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-store"
+            "value": "public, max-age=31536000, immutable"
           }
         ]
       }
