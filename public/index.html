@@ -508,8 +508,6 @@
             <section id="shifts-tab" class="tab-content">
                 <div class="section-header">
                     <h2 data-lang-key="headerManageShiftTemplates"><i class="fas fa-clock"></i> Manage Shift Templates</h2>
-                    <div class="header-actions">
-                        </div>
                 </div>
 
                 <input type="hidden" id="editing-shift-template-id">
@@ -525,18 +523,14 @@
 
                     <span class="time-input-label" data-lang-key="lblStartTime">Start Time:</span>
                     <div class="time-input-group">
-                        <label for="shift-template-start-hour" class="sr-only">Start Hour</label>
-                        <select id="shift-template-start-hour"></select> :
-                        <label for="shift-template-start-minute" class="sr-only">Start Minute</label>
-                        <select id="shift-template-start-minute"></select>
+                        <button id="shift-template-start-time-pill" class="pill time-pill">09:00</button>
+                        <input type="hidden" id="shift-template-start-time">
                     </div>
-
+                    
                     <span class="time-input-label" data-lang-key="lblEndTime">End Time:</span>
                     <div class="time-input-group">
-                        <label for="shift-template-end-hour" class="sr-only">End Hour</label>
-                        <select id="shift-template-end-hour"></select> :
-                        <label for="shift-template-end-minute" class="sr-only">End Minute</label>
-                        <select id="shift-template-end-minute"></select>
+                        <button id="shift-template-end-time-pill" class="pill time-pill">17:00</button>
+                        <input type="hidden" id="shift-template-end-time">
                     </div>
 
                      <button id="add-shift-template-btn">Save</button>
@@ -544,6 +538,11 @@
                 </div>
                 
                 <hr style="border: 0; height: 1px; background: #e0e0e0; margin: 25px 0;">
+                
+                <div class="form-group">
+                    <label>Sort by:</label>
+                    <div id="shift-template-sort-pills" class="pills-container"></div>
+                </div>
 
                 <div id="shift-template-container"></div>
             </section>
@@ -642,7 +641,7 @@
         </main>
     </div>
     
-    <script type="module" src="js/main.js?v=1.0.19"></script>
+    <script type="module" src="js/main.js?v=1.0.20"></script>
 <script>
   (function(){
     try {
