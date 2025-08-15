@@ -218,14 +218,20 @@ export function renderShiftTemplates() {
     const selectedDeptIds = getSelectedShiftDepartmentIds();
     
     let filteredTemplates = shiftTemplates;
+    const multiselectElement = document.getElementById('shift-dept-multiselect');
+
     if (currentUser && currentUser.role === 'Manager') {
         const managerDepts = currentUser.managedDepartmentIds || [];
         filteredTemplates = filteredTemplates.filter(st => {
             return (st.departmentIds || []).some(deptId => managerDepts.includes(deptId));
         });
-        document.getElementById('shift-dept-multiselect').style.display = 'none';
+        if (multiselectElement) {
+            multiselectElement.style.display = 'none';
+        }
     } else {
-        document.getElementById('shift-dept-multiselect').style.display = 'block';
+        if (multiselectElement) {
+            multiselectElement.style.display = 'block';
+        }
         if (selectedDeptIds !== null) {
             filteredTemplates = shiftTemplates.filter(st => {
                 const deptIds = st.departmentIds || [];
