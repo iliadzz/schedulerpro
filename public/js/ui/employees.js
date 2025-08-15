@@ -36,6 +36,7 @@ function renderEmployeeFilters() {
     }
     allPill.addEventListener('click', () => {
         selectedDeptIds = ['all'];
+        showInactive = false;
         renderEmployees();
     });
     container.appendChild(allPill);
@@ -50,6 +51,7 @@ function renderEmployeeFilters() {
             pill.classList.add('active');
         }
         pill.addEventListener('click', () => {
+            showInactive = false;
             if (selectedDeptIds.includes('all')) {
                 selectedDeptIds = [];
             }
@@ -76,6 +78,11 @@ function renderEmployeeFilters() {
     }
     inactivePill.addEventListener('click', () => {
         showInactive = !showInactive;
+        if (showInactive) {
+            selectedDeptIds = [];
+        } else {
+            selectedDeptIds = ['all'];
+        }
         renderEmployees();
     });
     container.appendChild(inactivePill);
@@ -318,10 +325,12 @@ export function renderEmployees() {
     if (currentUser && currentUser.role === 'Manager') {
         const managerDepts = currentUser.managedDepartmentIds || [];
         employeesToDisplay = users.filter(user => managerDepts.includes(user.departmentId));
+    } else if (showInactive) {
+        employeesToDisplay = users.filter(user => user.status === 'Terminated');
     } else {
-        // Apply pill filters for General Manager
+        // Apply pill filters for General Manager (Active employees only)
         employeesToDisplay = users.filter(user => {
-            const statusMatch = showInactive ? true : (user.status === 'Active' || user.status === undefined);
+            const statusMatch = user.status === 'Active' || user.status === undefined;
             const deptMatch = selectedDeptIds.includes('all') || selectedDeptIds.includes(user.departmentId);
             return statusMatch && deptMatch;
         });
