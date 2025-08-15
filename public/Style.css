@@ -189,12 +189,18 @@ h2 i {
 button {
     background-color: #3498db;
     color: white;
-    padding: 10px 18px;
-    border: none;
+    padding: 0 18px; /* Vertical padding removed */
+    border: 1px solid transparent; /* Added transparent border */
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.95em;
     transition: background-color 0.2s;
+    height: 40px; /* Explicit height */
+    box-sizing: border-box; /* Ensures padding & border are included in height */
+    display: inline-flex; /* Align content vertically */
+    align-items: center; /* Align content vertically */
+    justify-content: center; /* Align content horizontally */
+    font-weight: normal; /* Unify font weight */
 }
 button i {
     margin-right: 5px;
@@ -273,13 +279,13 @@ ul li .item-actions button {
     flex-wrap: wrap;
 }
 
-.scheduler-controls input[type="date"] { 
+.scheduler-controls input[type="date"] {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 0.9em;
 }
-.scheduler-controls label { 
+.scheduler-controls label {
     font-weight: normal;
     margin-right: 5px;
 }
@@ -362,7 +368,7 @@ ul li .item-actions button {
     text-align: center;
     border-bottom: 1px solid #ccc;
     border-right: 1px solid #ccc;
-    position: relative; 
+    position: relative;
     line-height: 1.2;
 }
 .schedule-header-row > div:last-child {
@@ -393,9 +399,9 @@ ul li .item-actions button {
     position: sticky;
     left: 0;
     z-index: 5;
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .employee-name-hours {
@@ -441,7 +447,7 @@ ul li .item-actions button {
     font-size: 0.9em;
     cursor: pointer;
     border-radius: 4px;
-    margin-left: 8px; 
+    margin-left: 8px;
 }
 .clear-employee-week-btn:hover {
     background-color: #fbeeee;
@@ -449,7 +455,7 @@ ul li .item-actions button {
     border-color: #e74c3c;
 }
 .clear-employee-week-btn i {
-    margin-right: 0; 
+    margin-right: 0;
 }
 .copy-employee-week-btn {
     background-color: transparent;
@@ -494,12 +500,12 @@ ul li .item-actions button {
     flex-direction: column;
     justify-content: space-between;
     gap: 3px;
-    cursor: default; 
+    cursor: default;
 }
 .day-cell:last-child {
     border-right: none;
 }
-.day-cell.can-assign:hover { 
+.day-cell.can-assign:hover {
     background-color: #f0faff;
 }
 .day-cell.drag-over {
@@ -514,13 +520,13 @@ ul li .item-actions button {
 }
 
 
-.shift-item, .time-off-item { 
+.shift-item, .time-off-item {
     border-radius: 3px;
     font-size: 0.85em;
     position: relative;
-    transition: box-shadow 0.2s, transform 0.2s, background-color 0.2s, color 0.2s; 
-    cursor: pointer; 
-    border: 1px solid rgba(0,0,0,0.1); 
+    transition: box-shadow 0.2s, transform 0.2s, background-color 0.2s, color 0.2s;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.1);
 }
 
 .shift-item {
@@ -531,9 +537,9 @@ ul li .item-actions button {
     padding: 0.8em 6px;
     justify-content: center;
 }
-.shift-item.dragging, .time-off-item.dragging { 
+.shift-item.dragging, .time-off-item.dragging {
     opacity: 0.5;
-    border: 1px dashed #000 !important; 
+    border: 1px dashed #000 !important;
     cursor: grabbing;
 }
 
@@ -543,32 +549,32 @@ ul li .item-actions button {
 }
 .shift-item .shift-role {
     font-size: 0.9em;
-    opacity: 0.9; 
+    opacity: 0.9;
 }
 .shift-item .delete-assigned-shift-btn,
 .time-off-item .delete-assigned-shift-btn {
     position: absolute;
-    top: 1px; 
-    right: 1px; 
+    top: 1px;
+    right: 1px;
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 0.85em; 
-    padding: 1px 3px; 
+    font-size: 0.85em;
+    padding: 1px 3px;
     line-height: 1;
     display: none;
     z-index: 1;
-    border-radius: 50%; 
-    color: #c0392b; 
+    border-radius: 50%;
+    color: #c0392b;
 }
 .shift-item:hover .delete-assigned-shift-btn,
 .time-off-item:hover .delete-assigned-shift-btn {
-    display: inline-block; 
-    background-color: rgba(255, 255, 255, 0.7); 
+    display: inline-block;
+    background-color: rgba(255, 255, 255, 0.7);
 }
 .shift-item .delete-assigned-shift-btn:hover,
 .time-off-item .delete-assigned-shift-btn:hover {
-    color: #8f2d21; 
+    color: #8f2d21;
     font-weight: bold;
 }
 
@@ -602,8 +608,8 @@ ul li .item-actions button {
 
 /* Time Off Specific Styles */
 .time-off-item {
-    background-color: #6c757d; 
-    color: white; 
+    background-color: #6c757d;
+    color: white;
     text-align: center;
     font-weight: bold;
     display: flex;
@@ -623,10 +629,10 @@ ul li .item-actions button {
     margin-left: 5px;
 }
 .time-off-item .delete-assigned-shift-btn {
-    color: #f8f9fa; 
+    color: #f8f9fa;
 }
 .time-off-item:hover .delete-assigned-shift-btn {
-    background-color: rgba(0,0,0,0.2); 
+    background-color: rgba(0,0,0,0.2);
     color: #fff;
 }
 
@@ -819,7 +825,7 @@ ul li .item-actions button {
 }
 #settings-tab small {
     color: #555;
-    display: block; 
+    display: block;
     margin-top: 5px;
 }
 #settings-tab h3 {
@@ -831,7 +837,7 @@ ul li .item-actions button {
     border: 0;
     height: 1px;
     background: #e0e0e0;
-    margin: 25px 0; 
+    margin: 25px 0;
 }
 
 #save-custom-as-template-section {
@@ -926,22 +932,22 @@ ul li .item-actions button {
     .form-group input, .form-group select, .form-group button, .button-like-label {
         width: 100%;
         box-sizing: border-box;
-        margin-bottom: 5px; 
+        margin-bottom: 5px;
     }
-    .form-group label { 
+    .form-group label {
         min-width: auto;
         width: 100%;
         margin-bottom: 3px;
     }
     #schedule-grid-container {
         font-size: 0.8em;
-        grid-template-columns: 100px repeat(7, 1fr); 
+        grid-template-columns: 100px repeat(7, 1fr);
     }
-    .scheduler-controls input[type="date"] { 
-        min-width: 150px; 
+    .scheduler-controls input[type="date"] {
+        min-width: 150px;
     }
     .header-employee {
-        font-size: 0.9em; 
+        font-size: 0.9em;
     }
     .shift-item, .time-off-item {
         font-size: 0.8em;
@@ -954,15 +960,15 @@ ul li .item-actions button {
         max-width: 90%;
     }
     .employee-row-label {
-        font-size: 0.9em; 
+        font-size: 0.9em;
         padding-right: 2px;
     }
     .clear-employee-week-btn {
-        padding: 2px 4px; 
+        padding: 2px 4px;
         font-size: 0.8em;
         margin-left: 4px;
     }
-    #settings-tab .form-group small { 
+    #settings-tab .form-group small {
         width: 100%;
         margin-left: 0 !important;
     }
@@ -976,10 +982,10 @@ ul li .item-actions button {
         color: #000;
     }
 
-    .app-header, 
-    .tab-navigation, 
-    .scheduler-controls, 
-    .item-actions, 
+    .app-header,
+    .tab-navigation,
+    .scheduler-controls,
+    .item-actions,
     .modal,
     .clear-employee-week-btn {
         display: none !important;
@@ -1016,13 +1022,13 @@ ul li .item-actions button {
     }
 
     .header-employee, .employee-row-label {
-        position: static; 
+        position: static;
         left: auto;
         z-index: auto;
     }
-    
-    .shift-item, 
-    .time-off-item, 
+
+    .shift-item,
+    .time-off-item,
     .role-color-swatch {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -1065,11 +1071,11 @@ ul li .item-actions button {
     padding: 4px 8px;
     min-height: 30px;
     display: flex;
-    flex-direction: row; 
-    flex-wrap: wrap;     
-    align-items: center; 
-    justify-content: center; 
-    gap: 4px 8px;        
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 8px;
     border-bottom: 1px solid #ccc;
     border-right: 1px solid #ccc;
 }
@@ -1116,7 +1122,7 @@ ul li .item-actions button {
 
 .hours-grid, .min-coverage-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
 }
 .day-settings-card {
@@ -1138,14 +1144,14 @@ ul li .item-actions button {
     margin-bottom: 10px;
 }
 .day-settings-card .form-group label {
-    min-width: auto; 
+    min-width: auto;
     font-weight: normal;
-    flex-shrink: 0; 
+    flex-shrink: 0;
 }
 .day-settings-card .form-group select {
     padding: 6px;
     min-width: auto;
-    width: 75px; 
+    width: 75px;
     font-size: 0.9em;
 }
 .min-coverage-grid .form-group {
@@ -1157,7 +1163,7 @@ ul li .item-actions button {
     font-weight: normal;
 }
 .min-coverage-grid input[type="number"] {
-    width: 50px; 
+    width: 50px;
     padding: 6px;
 }
 
@@ -1177,11 +1183,11 @@ ul li .item-actions button {
 }
 
 #shifts-tab .section-header .form-group {
-    margin-bottom: 0; 
+    margin-bottom: 0;
 }
 
 #shifts-tab > .form-group label {
-    min-width: auto; 
+    min-width: auto;
 }
 
 .template-item {
@@ -1239,19 +1245,21 @@ ul li .item-actions button {
     flex-wrap: wrap;
 }
 .day-pill, .dept-pill, .inactive-pill, .display-format-pill {
-    padding: 10px 18px;
+    padding: 0 18px; /* Vertical padding removed */
     border-radius: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 0.95em;
-    font-weight: normal;
+    font-weight: normal; /* Unify font weight */
     cursor: pointer;
-    background-color: #f8f9fa;
+    background-color: #e9ecef;
     color: #495057;
     transition: background-color 0.2s, color 0.2s, transform 0.2s;
     user-select: none;
-    border: none;
+    border: 1px solid #ccc;
+    height: 40px; /* Explicit height */
+    box-sizing: border-box; /* Ensures padding & border are included in height */
 }
 .day-pill:hover, .dept-pill:hover, .inactive-pill:hover, .display-format-pill:hover {
     transform: scale(1.05);
@@ -1341,10 +1349,10 @@ ul li .item-actions button {
 #login-container { display: flex; }
 
 #employee-form-modal .employee-form-grid {
-    max-height: 65vh; 
-    overflow-y: auto;  
+    max-height: 65vh;
+    overflow-y: auto;
     padding-right: 15px;
-    display: block;    
+    display: block;
 }
 
 #employee-form-modal .form-column {
@@ -1354,22 +1362,22 @@ ul li .item-actions button {
 .form-section-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px 20px; 
+    gap: 15px 20px;
 }
 
 #employee-form-modal .form-group {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 5px; 
-    margin-bottom: 0; 
+    gap: 5px;
+    margin-bottom: 0;
 }
 
 #employee-form-modal .form-group label,
 #employee-form-modal .form-group input,
 #employee-form-modal .form-group select,
 #employee-form-modal .phone-input-group {
-    width: 100%; 
+    width: 100%;
 }
 
 .sr-only {
@@ -1402,9 +1410,9 @@ ul li .item-actions button {
 
 #roles-tab .color-palette {
     display: grid;
-    grid-template-columns: repeat(8, 1fr); 
+    grid-template-columns: repeat(8, 1fr);
     gap: 6px;
-    max-width: 280px; 
+    max-width: 280px;
 }
 
 #roles-tab .color-swatch {
@@ -1421,7 +1429,7 @@ ul li .item-actions button {
 }
 
 #roles-tab .color-swatch.selected {
-    border-color: #2c3e50; 
+    border-color: #2c3e50;
     box-shadow: 0 0 5px rgba(0,0,0,0.4);
 }
 
