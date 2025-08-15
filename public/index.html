@@ -307,16 +307,11 @@
                         <button id="show-add-employee-modal-btn" data-lang-key="btnAddEmployee"><i class="fas fa-plus"></i> Add Employee</button>
                     </div>
                 </div>
-
+            
                 <hr>
                 <div class="form-group">
-                    <label for="employee-list-filter" data-lang-key="lblFilterByDept">Filter by Department:</label>
-                    <select id="employee-list-filter">
-                    </select>
-                    <label class="checkbox-label" for="show-inactive-employees">
-                        <input type="checkbox" id="show-inactive-employees">
-                        Show Inactive Employees
-                    </label>
+                    <label data-lang-key="lblFilterByDept">Filter by Department:</label>
+                    <div id="employee-filter-pills" class="pills-container"></div>
                 </div>
                 <h3 data-lang-key="hdrCurrentEmployees">Current Employees:</h3>
                 <ul id="employee-list"></ul>
@@ -631,7 +626,7 @@
         </main>
     </div>
     
-    <script type="module" src="js/main.js?v=1.0.6"></script>
+    <script type="module" src="js/main.js?v=1.0.7"></script>
 <script>
   (function(){
     try {
