@@ -220,10 +220,11 @@ export function renderShiftTemplates() {
     let filteredTemplates = shiftTemplates;
     if (selectedDeptIds !== null) {
         filteredTemplates = shiftTemplates.filter(st => {
-            if (!st.departmentIds || st.departmentIds.length === 0) {
+            const deptIds = st.departmentIds || [];
+            if (deptIds.length === 0) {
                 return selectedDeptIds.includes('_unassigned');
             }
-            return st.departmentIds.some(deptId => selectedDeptIds.includes(deptId));
+            return deptIds.some(deptId => selectedDeptIds.includes(deptId));
         });
     }
 
@@ -231,7 +232,7 @@ export function renderShiftTemplates() {
         const deptIds = template.departmentIds || [];
         if (deptIds.length === 0) {
             if (!acc._unassigned) {
-                acc._unassigned = { name: 'No Department Assigned', templates: [] };
+                acc._unassigned = { name: 'Unassigned', templates: [] };
             }
             acc._unassigned.templates.push(template);
         } else {
@@ -265,14 +266,14 @@ export function renderShiftTemplates() {
         return deptOrder.indexOf(a) - deptOrder.indexOf(b);
     });
 
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'template-grid-container';
+
     sortedDeptGroups.forEach(deptId => {
         const deptGroup = groupedByDept[deptId];
-        const deptWrapper = document.createElement('div');
-        deptWrapper.className = 'department-group';
-        deptWrapper.innerHTML = `<h3>${deptGroup.name}</h3>`;
-
-        const grid = document.createElement('div');
-        grid.className = 'template-grid';
+        const deptColumn = document.createElement('div');
+        deptColumn.className = 'department-column';
+        deptColumn.innerHTML = `<h3>${deptGroup.name}</h3>`;
 
         deptGroup.templates.forEach(st => {
             const itemDiv = document.createElement('div');
@@ -326,6 +327,19 @@ export function renderShiftTemplates() {
                 if ((st.availableDays || []).includes(day)) {
                     pill.classList.add('active');
                 }
+                pill.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const currentDays = st.availableDays || [];
+                    const index = currentDays.indexOf(day);
+                    if (index > -1) {
+                        currentDays.splice(index, 1);
+                    } else {
+                        currentDays.push(day);
+                    }
+                    st.availableDays = currentDays;
+                    saveShiftTemplates();
+                    renderShiftTemplates();
+                });
                 dayPills.appendChild(pill);
             });
 
@@ -334,10 +348,11 @@ export function renderShiftTemplates() {
             itemDiv.appendChild(pillsContainer);
             itemDiv.appendChild(createItemActionButtons(() => populateShiftTemplateFormForEdit(st), () => deleteShiftTemplate(st.id)));
             
-            grid.appendChild(itemDiv);
+            deptColumn.appendChild(itemDiv);
         });
         
-        deptWrapper.appendChild(grid);
-        dom.shiftTemplateContainer.appendChild(deptWrapper);
+        gridContainer.appendChild(deptColumn);
     });
+
+    dom.shiftTemplateContainer.appendChild(gridContainer);
 }
