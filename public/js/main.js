@@ -44,8 +44,11 @@ export function applyRbacPermissions() {
 window.__startApp = function() {
     console.log("DOM and Auth ready. Initializing application...");
 
-    initializeSync();
+    // Initialize Firestore listeners first to ensure data is available
     initializeDataListeners();
+
+    // Then initialize the sync mechanism
+    initializeSync();
 
     populateRoleColorPalette();
     populateTimeSelectsForElements(dom.shiftTemplateStartHourSelect, dom.shiftTemplateStartMinuteSelect, "09", "00");
