@@ -59,11 +59,10 @@ export const employeeManagedDepartmentsMultiselect = document.getElementById('em
 
 // Shift Templates Tab
 export const shiftTemplateNameInput = document.getElementById('shift-template-name');
-export const shiftTemplateDepartmentSelect = document.getElementById('shift-template-department');
-export const shiftTemplateStartHourSelect = document.getElementById('shift-template-start-hour');
-export const shiftTemplateStartMinuteSelect = document.getElementById('shift-template-start-minute');
-export const shiftTemplateEndHourSelect = document.getElementById('shift-template-end-hour');
-export const shiftTemplateEndMinuteSelect = document.getElementById('shift-template-end-minute');
+export const shiftTemplateStartTimeInput = document.getElementById('shift-template-start-time');
+export const shiftTemplateEndTimeInput = document.getElementById('shift-template-end-time');
+export const shiftTemplateStartTimePill = document.getElementById('shift-template-start-time-pill');
+export const shiftTemplateEndTimePill = document.getElementById('shift-template-end-time-pill');
 export const shiftFormDepartmentPills = document.getElementById('shift-form-department-pills');
 export const shiftFormDayPills = document.getElementById('shift-form-day-pills');
 export const addShiftTemplateBtn = document.getElementById('add-shift-template-btn');
@@ -89,7 +88,6 @@ export const printScheduleBtn = document.getElementById('print-schedule-btn');
 export const copyFromWeekPicker = document.getElementById('copy-from-week-picker');
 export const executeCopyWeekBtn = document.getElementById('execute-copy-week-btn');
 export const clearCurrentWeekBtn = document.getElementById('clear-current-week-btn');
-export const clearCopiedShiftBtn = document.getElementById('clear-copied-shift-btn');
 export const manageEventsBtn = document.getElementById('manage-events-btn');
 
 // Assign Shift / Time Off Modal

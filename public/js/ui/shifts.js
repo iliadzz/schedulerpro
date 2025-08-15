@@ -1,14 +1,14 @@
 // js/ui/shifts.js
 
-import { shiftTemplates, departments, saveShiftTemplates } from '../state.js';
+import { shiftTemplates, departments, saveShiftTemplates, currentUser } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { createItemActionButtons, calculateShiftDuration, formatTimeForDisplay, formatTimeToHHMM, generateId } from '../utils.js';
-import { makeListSortable } from '../features/list-dnd.js';
 
 const SHIFTS_FILTER_KEY = 'shiftsDepartmentFilterState';
 
-let tempSelectedDeptIds = [];
+let sortMode = 'ST'; // ST, END
+
 const daysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const dayNames = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
 
@@ -131,12 +131,11 @@ function updateShiftDeptLabel() {
 export function populateShiftTemplateFormForEdit(template) {
     dom.editingShiftTemplateIdInput.value = template.id;
     dom.shiftTemplateNameInput.value = template.name;
-    const [startH, startM] = template.start.split(':');
-    const [endH, endM] = template.end.split(':');
-    dom.shiftTemplateStartHourSelect.value = startH;
-    dom.shiftTemplateStartMinuteSelect.value = startM;
-    dom.shiftTemplateEndHourSelect.value = endH;
-    dom.shiftTemplateEndMinuteSelect.value = endM;
+    
+    dom.shiftTemplateStartTimeInput.value = template.start;
+    dom.shiftTemplateStartTimePill.textContent = template.start;
+    dom.shiftTemplateEndTimeInput.value = template.end;
+    dom.shiftTemplateEndTimePill.textContent = template.end;
 
     renderPills(dom.shiftFormDepartmentPills, departments, template.departmentIds || [], 'dept', 'abbreviation', 'active');
     renderPills(dom.shiftFormDayPills, daysOrder.map(d => ({id: d, name: dayNames[d]})), template.availableDays || [], 'day', 'name', 'active');
@@ -148,10 +147,11 @@ export function populateShiftTemplateFormForEdit(template) {
 export function resetShiftTemplateForm() {
     dom.editingShiftTemplateIdInput.value = '';
     dom.shiftTemplateNameInput.value = '';
-    dom.shiftTemplateStartHourSelect.value = "09";
-    dom.shiftTemplateStartMinuteSelect.value = "00";
-    dom.shiftTemplateEndHourSelect.value = "17";
-    dom.shiftTemplateEndMinuteSelect.value = "00";
+    
+    dom.shiftTemplateStartTimeInput.value = "09:00";
+    dom.shiftTemplateStartTimePill.textContent = "09:00";
+    dom.shiftTemplateEndTimeInput.value = "17:00";
+    dom.shiftTemplateEndTimePill.textContent = "17:00";
 
     renderPills(dom.shiftFormDepartmentPills, departments, [], 'dept', 'abbreviation', 'active');
     renderPills(dom.shiftFormDayPills, daysOrder.map(d => ({id: d, name: dayNames[d]})), daysOrder, 'day', 'name', 'active');
@@ -174,8 +174,8 @@ export function deleteShiftTemplate(stId) {
 
 export function handleSaveShiftTemplate() {
     const name = dom.shiftTemplateNameInput.value.trim();
-    const start = formatTimeToHHMM(dom.shiftTemplateStartHourSelect.value, dom.shiftTemplateStartMinuteSelect.value);
-    const end = formatTimeToHHMM(dom.shiftTemplateEndHourSelect.value, dom.shiftTemplateEndMinuteSelect.value);
+    const start = dom.shiftTemplateStartTimeInput.value;
+    const end = dom.shiftTemplateEndTimeInput.value;
     const editingId = dom.editingShiftTemplateIdInput.value;
 
     const departmentIds = getSelectedPillIds(dom.shiftFormDepartmentPills, 'active');
@@ -218,15 +218,25 @@ export function renderShiftTemplates() {
     const selectedDeptIds = getSelectedShiftDepartmentIds();
     
     let filteredTemplates = shiftTemplates;
-    if (selectedDeptIds !== null) {
-        filteredTemplates = shiftTemplates.filter(st => {
-            const deptIds = st.departmentIds || [];
-            if (deptIds.length === 0) {
-                return selectedDeptIds.includes('_unassigned');
-            }
-            return deptIds.some(deptId => selectedDeptIds.includes(deptId));
+    if (currentUser && currentUser.role === 'Manager') {
+        const managerDepts = currentUser.managedDepartmentIds || [];
+        filteredTemplates = filteredTemplates.filter(st => {
+            return (st.departmentIds || []).some(deptId => managerDepts.includes(deptId));
         });
+        document.getElementById('shift-dept-multiselect').style.display = 'none';
+    } else {
+        document.getElementById('shift-dept-multiselect').style.display = 'block';
+        if (selectedDeptIds !== null) {
+            filteredTemplates = shiftTemplates.filter(st => {
+                const deptIds = st.departmentIds || [];
+                if (deptIds.length === 0) {
+                    return selectedDeptIds.includes('_unassigned');
+                }
+                return deptIds.some(deptId => selectedDeptIds.includes(deptId));
+            });
+        }
     }
+
 
     const groupedByDept = filteredTemplates.reduce((acc, template) => {
         const deptIds = template.departmentIds || [];
@@ -251,11 +261,17 @@ export function renderShiftTemplates() {
 
     Object.values(groupedByDept).forEach(deptGroup => {
         deptGroup.templates.sort((a, b) => {
-            if (a.start < b.start) return -1;
-            if (a.start > b.start) return 1;
-            if (a.end < b.end) return 1;
-            if (a.end > b.end) return -1;
-            return a.name.localeCompare(b.name);
+            if (sortMode === 'ST') {
+                if (a.start < b.start) return -1;
+                if (a.start > b.start) return 1;
+                const durationA = calculateShiftDuration(a.start, a.end);
+                const durationB = calculateShiftDuration(b.start, b.end);
+                return durationA - durationB;
+            } else { // END
+                if (a.end < b.end) return -1;
+                if (a.end > b.end) return 1;
+                return a.start.localeCompare(b.start);
+            }
         });
     });
 
