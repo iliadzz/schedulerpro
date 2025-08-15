@@ -36,7 +36,8 @@ function openTimePicker(pillElement, inputElement) {
     // Populate hours
     for (let i = 0; i < 24; i++) {
         const hour = String(i).padStart(2, '0');
-        const hourPill = document.createElement('div');
+        const hourPill = document.createElement('button');
+        hourPill.type = 'button';
         hourPill.className = 'pill';
         hourPill.textContent = hour;
         hourPill.dataset.hour = hour;
@@ -53,7 +54,8 @@ function openTimePicker(pillElement, inputElement) {
     // Populate minutes in increments of 5
     for (let i = 0; i < 60; i += 5) {
         const minute = String(i).padStart(2, '0');
-        const minutePill = document.createElement('div');
+        const minutePill = document.createElement('button');
+        minutePill.type = 'button';
         minutePill.className = 'pill';
         minutePill.textContent = minute;
         minutePill.dataset.minute = minute;
@@ -111,15 +113,21 @@ export function initTimePickerModal() {
 function renderPills(container, items, selectedIds, key, nameProp, activeClass) {
     container.innerHTML = '';
     items.forEach(item => {
-        const pill = document.createElement('div');
+        const pill = document.createElement('button');
+        pill.type = 'button';
         pill.className = `pill ${key}-pill`;
         pill.dataset.id = item.id;
         pill.textContent = item[nameProp];
         if (selectedIds.includes(item.id)) {
             pill.classList.add(activeClass);
+            pill.setAttribute('aria-pressed', 'true');
+        } else {
+            pill.setAttribute('aria-pressed', 'false');
         }
         pill.addEventListener('click', () => {
             pill.classList.toggle(activeClass);
+            const isPressed = pill.getAttribute('aria-pressed') === 'true';
+            pill.setAttribute('aria-pressed', String(!isPressed));
         });
         container.appendChild(pill);
     });
@@ -409,7 +417,8 @@ export function renderShiftTemplates() {
             const deptPills = document.createElement('div');
             deptPills.className = 'department-pills-container';
             departments.forEach(dept => {
-                const pill = document.createElement('div');
+                const pill = document.createElement('button');
+                pill.type = 'button';
                 pill.className = 'pill dept-pill';
                 pill.textContent = dept.abbreviation;
                 if ((st.departmentIds || []).includes(dept.id)) {
@@ -442,7 +451,8 @@ export function renderShiftTemplates() {
             const dayPills = document.createElement('div');
             dayPills.className = 'day-pills-container';
             daysOrder.forEach(day => {
-                const pill = document.createElement('div');
+                const pill = document.createElement('button');
+                pill.type = 'button';
                 pill.className = 'pill day-pill';
                 pill.textContent = dayNames[day];
                 if ((st.availableDays || []).includes(day)) {

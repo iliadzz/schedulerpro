@@ -209,6 +209,14 @@ button, .day-pill, .dept-pill, .inactive-pill, .display-format-pill {
     justify-content: center;
 }
 
+/* Add near other pill styles or at the end of the file */
+.pill:focus-visible,
+.day-pill:focus-visible, 
+.dept-pill:focus-visible { 
+    outline: 2px solid #1d6fa5; 
+    outline-offset: 2px; 
+}
+
 /* UPDATED BUTTON RULE */
 button {
     background-color: #3498db;
