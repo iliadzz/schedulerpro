@@ -44,7 +44,7 @@ import { createItemActionButtons, generateId } from '../utils.js';
 // --- Module-level state for filters ---
 let selectedDeptIds = ['all'];
 let showInactive = false;
-let displayFormat = 'LF'; // LF, FL, DN
+let displayFormat = 'LF'; // Default to Last Name, First Name
 
 function renderEmployeeFilters() {
     const container = document.getElementById('employee-filter-pills');
@@ -52,6 +52,7 @@ function renderEmployeeFilters() {
 
     container.innerHTML = '';
 
+    // "All" Pill
     const allPill = document.createElement('div');
     allPill.className = 'pill dept-pill';
     allPill.textContent = 'All';
@@ -65,6 +66,7 @@ function renderEmployeeFilters() {
     });
     container.appendChild(allPill);
 
+    // Department Pills
     departments.forEach(dept => {
         const pill = document.createElement('div');
         pill.className = 'pill dept-pill';
@@ -91,6 +93,7 @@ function renderEmployeeFilters() {
         container.appendChild(pill);
     });
     
+    // "Inactive" Pill
     const inactivePill = document.createElement('div');
     inactivePill.className = 'pill inactive-pill';
     inactivePill.textContent = 'INACTIVE';
@@ -332,4 +335,31 @@ export function renderEmployees() {
                 employeeName = user.displayName || `${user.firstName} ${user.lastName}`;
         }
         
-        const statusIndicator
+        const statusIndicator = (user.status === 'Terminated') ? ' (Inactive)' : '';
+        nameSpan.textContent = `${employeeName.trim()} ${deptAbbr}${statusIndicator}`;
+
+        if (user.status === 'Terminated') li.style.opacity = '0.6';
+        
+        li.appendChild(nameSpan);
+
+        const editHandler = () => {
+            if (employeeModalTitle) employeeModalTitle.textContent = getTranslatedString('hdrEditEmployee');
+            populateEmployeeFormForEdit(user);
+            if (employeeFormModal) employeeFormModal.style.display = 'block';
+        };
+        const deleteHandler = () => deleteEmployee(user.id);
+
+        const actionButtonsDiv = createItemActionButtons(editHandler, deleteHandler);
+        actionButtonsDiv.prepend(createVisibilityToggle(user));
+        li.appendChild(actionButtonsDiv);
+        employeeListUl.appendChild(li);
+    });
+}
+
+export function initEmployeeModalListeners() {
+    if (employeeStatusSelect) {
+        employeeStatusSelect.addEventListener('change', () => {
+            terminationDetails.style.display = employeeStatusSelect.value === 'Terminated' ? 'block' : 'none';
+        });
+    }
+}
