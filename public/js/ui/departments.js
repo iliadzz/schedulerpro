@@ -75,9 +75,13 @@ function handleDepartmentFilterChange(selectedId) {
         }
     });
 
+    // --- FIX: Save the selected filter to localStorage ---
+    localStorage.setItem('schedulerDepartmentFilter', selectedId);
+
     window.selectedDepartmentIds = [selectedId];
     renderWeeklySchedule();
 }
+
 
 export function populateDepartmentFormForEdit(department) {
     dom.editingDepartmentIdInput.value = department.id;
@@ -118,7 +122,7 @@ export async function deleteDepartment(deptId) {
     renderDepartments();
     renderEmployees();
     renderRoles();
-    
+
     const { renderShiftTemplates } = await import('./shifts.js');
     renderShiftTemplates();
 
@@ -131,14 +135,14 @@ export function renderDepartments() {
     if (!dom.departmentListUl) return;
     const savedEmployeeFilter = localStorage.getItem('employeeListFilterValue');
     dom.departmentListUl.innerHTML = '';
-    
+
     const selectDeptHTML = `<option value="" disabled data-lang-key="optSelectDept">${getTranslatedString('optSelectDept')}</option>`;
     const allDeptsOptionHTML = `<option value="all" data-lang-key="optAllDepts">${getTranslatedString('optAllDepts')}</option>`;
 
     if (dom.roleDepartmentSelect) dom.roleDepartmentSelect.innerHTML = selectDeptHTML;
     if (dom.shiftTemplateDepartmentSelect) dom.shiftTemplateDepartmentSelect.innerHTML = selectDeptHTML;
     if (dom.employeeDepartmentSelect) dom.employeeDepartmentSelect.innerHTML = `<option value="">-- ${getTranslatedString('optNoDept')} --</option>`;
-    
+
     const validDepartments = departments.filter(dept => dept && dept.id && dept.name);
     validDepartments.forEach(dept => {
         const li = document.createElement('li');
@@ -175,5 +179,7 @@ export function renderDepartments() {
 
 export function initializeSchedulerFilter() {
     populateDepartmentFilter();
-    handleDepartmentFilterChange('all');
+    // --- FIX: Load the saved filter from localStorage ---
+    const savedFilter = localStorage.getItem('schedulerDepartmentFilter') || 'all';
+    handleDepartmentFilterChange(savedFilter);
 }

@@ -63,5 +63,7 @@
     font-size: 1.1em;
 }
 
-.app-container { display: none; }
-#login-container { display: flex; }
+/* --- FIX: Hide both containers by default to prevent flash --- */
+.app-container, #login-container {
+    display: none;
+}

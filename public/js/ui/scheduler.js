@@ -1,10 +1,10 @@
 // js/ui/scheduler.js
 
-import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser } from '../state.js';
+import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
-import { formatDate, getWeekRange, getDatesOfWeek, formatTimeForDisplay, calculateShiftDuration, getContrastColor } from '../utils.js';
-import { HistoryManager, DeleteAssignmentCommand } from '../features/history.js';
+import { formatDate, getWeekRange, getDatesOfWeek, formatTimeForDisplay, calculateShiftDuration, getContrastColor, generateId } from '../utils.js';
+import { HistoryManager, DeleteAssignmentCommand, ModifyAssignmentCommand } from '../features/history.js';
 import { openModalForEdit, openAssignShiftModalForNewOrCustom } from './modals.js';
 import { isEventOnDate } from './events.js';
 import { sortKeyForEmployee, addEmployeeDragAndDropHandlers } from '../features/employee-dnd.js';
@@ -88,14 +88,57 @@ export function handleCopyWeek() {
     }
 }
 
+// --- FIX: Implement the actual copy logic ---
 export function executeCopyWeek() {
-    // This is a placeholder for the actual copy logic.
-    alert("Executing the copy week function!");
-    const copyWeekModal = document.getElementById('copy-week-modal');
-    if (copyWeekModal) {
-        copyWeekModal.style.display = 'none';
+    const sourceDateInput = document.getElementById('copy-week-source-date');
+    if (!sourceDateInput.value) {
+        alert("Please select a source week.");
+        return;
+    }
+
+    const sourceDate = new Date(sourceDateInput.value + 'T00:00:00');
+    const sourceWeek = getWeekRange(sourceDate);
+    const sourceWeekDates = getDatesOfWeek(sourceWeek.start);
+
+    const targetWeek = getWeekRange(currentViewDate);
+    const targetWeekDates = getDatesOfWeek(targetWeek.start);
+
+    const selectedDepartmentIds = window.selectedDepartmentIds || ['all'];
+    let visibleUsers = users.filter(user =>
+        (user.status === 'Active' || user.status === undefined) &&
+        user.isVisible !== false &&
+        (selectedDepartmentIds.includes('all') || selectedDepartmentIds.includes(user.departmentId))
+    );
+
+    if (confirm(`Copy the schedule from ${formatDate(sourceWeek.start)} to ${formatDate(targetWeek.start)} for all visible employees?`)) {
+        visibleUsers.forEach(user => {
+            for (let i = 0; i < 7; i++) {
+                const sourceDateStr = formatDate(sourceWeekDates[i]);
+                const targetDateStr = formatDate(targetWeekDates[i]);
+
+                const sourceKey = `${user.id}-${sourceDateStr}`;
+                const targetKey = `${user.id}-${targetDateStr}`;
+
+                if (scheduleAssignments[sourceKey] && scheduleAssignments[sourceKey].shifts) {
+                    scheduleAssignments[targetKey] = { shifts: [] };
+                    scheduleAssignments[sourceKey].shifts.forEach(shiftToCopy => {
+                        const newShift = { ...shiftToCopy, assignmentId: generateId('assign') };
+                        const command = new ModifyAssignmentCommand(user.id, targetDateStr, newShift);
+                        HistoryManager.doAction(command); // Use HistoryManager to make it undoable
+                    });
+                }
+            }
+        });
+
+        saveScheduleAssignments();
+        renderWeeklySchedule();
+        const copyWeekModal = document.getElementById('copy-week-modal');
+        if (copyWeekModal) {
+            copyWeekModal.style.display = 'none';
+        }
     }
 }
+
 
 export function handleClearWeek() {
     alert("Clear week logic needs to be fully wired up here.");
@@ -103,13 +146,13 @@ export function handleClearWeek() {
 
 export function renderWeeklySchedule() {
     if (!dom.scheduleGridBody) { return; }
-    
+
     if (dom.weekPickerAlt) dom.weekPickerAlt.value = formatDate(currentViewDate);
-    
+
     dom.scheduleGridBody.innerHTML = '';
     const week = getWeekRange(currentViewDate);
     const weekDates = getDatesOfWeek(week.start);
-    
+
     const dayHeaders = document.querySelectorAll('.schedule-header-row .header-day');
     dayHeaders.forEach((header, index) => {
         if (weekDates[index]) {
@@ -129,11 +172,11 @@ export function renderWeeklySchedule() {
             header.dataset.date = formatDate(dateObj);
         }
     });
-    
+
     const selectedDepartmentIds = window.selectedDepartmentIds || ['all'];
-    let visibleUsers = users.filter(user => 
+    let visibleUsers = users.filter(user =>
         (user.status === 'Active' || user.status === undefined) &&
-        user.isVisible !== false && 
+        user.isVisible !== false &&
         (selectedDepartmentIds.includes('all') || selectedDepartmentIds.includes(user.departmentId))
     );
 
@@ -152,7 +195,7 @@ export function renderWeeklySchedule() {
     });
 
     calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepartmentIds);
-    
+
     const canEditSchedule = currentUser && currentUser.role !== 'User';
 
     visibleUsers.forEach(user => {
@@ -191,7 +234,7 @@ export function renderWeeklySchedule() {
                 if (dom.copyEmployeeModalUserIdInput) dom.copyEmployeeModalUserIdInput.value = user.id;
                 if (dom.copyEmployeeWeekModal) dom.copyEmployeeWeekModal.style.display = 'block';
             });
-            
+
             userRowLabel.querySelector('.clear-employee-week-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 clearEmployeeWeek(user.id, weekDates);
@@ -203,7 +246,7 @@ export function renderWeeklySchedule() {
             cell.className = 'day-cell';
             const dateStr = formatDate(date);
             cell.classList.toggle('is-event-day', isEventOnDate(date).length > 0);
-            
+
             cell.dataset.date = dateStr;
             cell.dataset.userId = user.id;
 
@@ -223,7 +266,7 @@ export function renderWeeklySchedule() {
             dayData.shifts.forEach(assignment => {
                 const itemDiv = document.createElement('div');
                 itemDiv.dataset.assignmentId = assignment.assignmentId;
-                
+
                 const deleteBtnHTML = canEditSchedule ? `<button class="delete-assigned-shift-btn" data-assignment-id="${assignment.assignmentId}">&times;</button>`: '';
 
                 if (canEditSchedule) {
@@ -235,7 +278,7 @@ export function renderWeeklySchedule() {
                         openModalForEdit(assignment, user.id, dateStr);
                     });
                 }
-                
+
                 if (assignment.type === 'time_off') {
                     itemDiv.className = 'shift-item time-off-item';
                     itemDiv.innerHTML = `<span class="time-off-reason">${assignment.reason.toUpperCase()}</span>` + deleteBtnHTML;
@@ -272,10 +315,10 @@ export function renderWeeklySchedule() {
             cell.appendChild(shiftsContainer);
             dom.scheduleGridBody.appendChild(cell);
         });
-        
+
         const hoursEl = document.getElementById(`hours-${user.id}`);
         if(hoursEl) hoursEl.textContent = weeklyHours.toFixed(1);
-        
+
         userRowLabel.querySelector('.vacation-counter').addEventListener('click', handleVacationClick);
     });
 }
