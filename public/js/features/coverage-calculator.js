@@ -3,7 +3,6 @@
 
 import { departments, restaurantSettings, scheduleAssignments, shiftTemplates, roles } from '../state.js';
 import { isEventOnDate } from '../ui/events.js';
-// Import the timeToMinutes function
 import { calculateOverlap, timeToMinutes } from '../utils.js';
 
 export function calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepartmentIds) {
@@ -47,6 +46,7 @@ export function calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepa
                             } else {
                                 const tpl = shiftTemplates.find(st => st.id === shift.shiftTemplateId);
                                 if (tpl) {
+                                    // Correctly get department from the template
                                     shiftDeptId = tpl.departmentId;
                                 }
                             }
@@ -64,11 +64,11 @@ export function calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepa
                                         coverage.open++;
                                     }
                                     // Lunch: Counts if shift overlaps with lunch period by at least the min duration.
-                                    if (calculateOverlap(start, end, daySettings.lunchStart, daySettings.lunchEnd) >= minMealDuration) {
+                                    if (daySettings.lunchStart && daySettings.lunchEnd && calculateOverlap(start, end, daySettings.lunchStart, daySettings.lunchEnd) >= minMealDuration) {
                                         coverage.lunch++;
                                     }
                                     // Dinner: Counts if shift overlaps with dinner period by at least the min duration.
-                                    if (calculateOverlap(start, end, daySettings.dinnerStart, daySettings.dinnerEnd) >= minMealDuration) {
+                                    if (daySettings.dinnerStart && daySettings.dinnerEnd && calculateOverlap(start, end, daySettings.dinnerStart, daySettings.dinnerEnd) >= minMealDuration) {
                                         coverage.dinner++;
                                     }
                                     // Closing: Counts if shift ends AT or AFTER closing.
