@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    // Checks if the logged-in user's token has a specific permission claim.
+    function hasPermission(permission) {
+      return request.auth != null && request.auth.token[permission] == true;
+    }
+
+    // --- Collection Rules ---
+
+    // USERS collection
+    // Contains employee personal and employment details.
+    match /users/{userId} {
+      // Allow reads if user can manage employees OR edit the schedule.
+      allow read: if hasPermission('manage_employees') || hasPermission('edit_schedule');
+      // Only allow writes (create, update, delete) if user can manage employees.
+      allow write: if hasPermission('manage_employees');
+    }
+
+    // SCHEDULE ASSIGNMENTS collection
+    // Contains all the shifts and time-off assigned to users.
+    match /scheduleAssignments/{assignmentId} {
+      // Allow reads if user can view the schedule.
+      allow read: if hasPermission('view_schedule');
+      // Allow writes if user can edit the schedule.
+      allow write: if hasPermission('edit_schedule');
+    }
+
+    // DEPARTMENTS, ROLES, SHIFT TEMPLATES, and EVENTS collections
+    // These are managed by higher-level users.
+    match /{collection}/{docId}
+      where collection in ['departments', 'roles', 'shiftTemplates', 'events'] {
+        // Allow reads to anyone who can at least view the schedule.
+        allow read: if hasPermission('view_schedule');
+        // Only allow writes to users who can manage roles (a GM-level permission).
+        allow write: if hasPermission('manage_roles');
+      }
+
+    // SETTINGS collection
+    // Contains restaurant hours and coverage settings.
+    match /settings/{docId} {
+       // Only General Managers can read or write settings.
+      allow read, write: if hasPermission('manage_settings');
+    }
+  }
+}
