@@ -1,9 +1,4 @@
-//A module for generic, reusable helper functions that don't belong to a specific feature. This will include functions like generateId, formatDate, getContrastColor, and
-// createItemActionButtons.
-
-// js/utils.js// js/utils.js
-
-import { currentViewDate } from './state.js';
+// js/utils.js
 
 export function generateId(prefix = 'id') {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -111,25 +106,43 @@ export function createItemActionButtons(editHandler, deleteHandler) {
     return actionsDiv;
 }
 
-// --- THIS IS THE FIX ---
-// These functions are now correctly located and exported from this utility file.
-export function timeToMinutes(timeStr) {
-    if (!timeStr || !timeStr.includes(':')) return 0;
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
+// --- NEW AND IMPROVED TIME FUNCTIONS ---
+
+/**
+ * Converts "HH:MM" time string to total minutes from midnight.
+ * @param {string} hhmm - The time string "HH:MM".
+ * @returns {number}
+ */
+export function timeToMinutes(hhmm) {
+  if (typeof hhmm !== 'string' || !hhmm.includes(':')) return 0;
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
 }
 
+/**
+ * Normalizes a time span to handle overnight shifts (e.g., 22:00-02:00).
+ * @param {number} startMin - Start time in minutes.
+ * @param {number} endMin - End time in minutes.
+ * @returns {Array<number>} An array [start, end] with end adjusted for overnight.
+ */
+function normalizeSpan(startMin, endMin) {
+  return endMin >= startMin ? [startMin, endMin] : [startMin, endMin + 24 * 60];
+}
+
+/**
+ * Calculates the total number of overlapping minutes between two time spans.
+ * @param {string} shiftStart - "HH:MM"
+ * @param {string} shiftEnd - "HH:MM"
+ * @param {string} periodStart - "HH:MM"
+ * @param {string} periodEnd - "HH:MM"
+ * @returns {number}
+ */
 export function calculateOverlap(shiftStart, shiftEnd, periodStart, periodEnd) {
-    const shiftStartMin = timeToMinutes(shiftStart);
-    let shiftEndMin = timeToMinutes(shiftEnd);
-    const periodStartMin = timeToMinutes(periodStart);
-    let periodEndMin = timeToMinutes(periodEnd);
-
-    if (shiftEndMin < shiftStartMin) shiftEndMin += 24 * 60;
-    if (periodEndMin < periodStartMin) periodEndMin += 24 * 60;
-
-    const overlapStart = Math.max(shiftStartMin, periodStartMin);
-    const overlapEnd = Math.min(shiftEndMin, periodEndMin);
+    const [as, ae] = normalizeSpan(timeToMinutes(shiftStart), timeToMinutes(shiftEnd));
+    const [bs, be] = normalizeSpan(timeToMinutes(periodStart), timeToMinutes(periodEnd));
+    
+    const overlapStart = Math.max(as, bs);
+    const overlapEnd = Math.min(ae, be);
 
     return Math.max(0, overlapEnd - overlapStart);
 }
