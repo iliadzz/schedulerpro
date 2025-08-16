@@ -61,7 +61,7 @@ export function calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepa
                                         coverage.dinner++;
                                     }
 
-                                    // Closing: Counts if shift ends AT or AFTER closing time.
+                                    // Closing: Counts if shift ends AT or AFTER closing time. A shift ending at 21:59 will not be counted if closing is 22:00.
                                     if (timeToMinutes(end) >= timeToMinutes(daySettings.close)) {
                                         coverage.close++;
                                     }
