@@ -1,10 +1,10 @@
 // js/features/coverage-calculator.js
-// handles the business logic for calculating the coverage summary.// js/features/coverage-calculator.js
+// handles the business logic for calculating the coverage summary.
 
 import { departments, restaurantSettings, scheduleAssignments, shiftTemplates, roles } from '../state.js';
-import { getTranslatedString } from '../i18n.js';
 import { isEventOnDate } from '../ui/events.js';
-import { calculateOverlap } from '../utils.js';
+// Import the timeToMinutes function
+import { calculateOverlap, timeToMinutes } from '../utils.js';
 
 export function calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepartmentIds) {
     const coverageContainer = document.getElementById('coverage-summary-container');
@@ -28,7 +28,6 @@ export function calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepa
             const dateStr = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
             const dayOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][date.getDay()];
             const daySettings = restaurantSettings[dayOfWeek] || {};
-
             const coverageSettings = restaurantSettings.minCoverage?.[dept.id]?.[dayOfWeek] || restaurantSettings.minCoverage?._default?.[dayOfWeek] || {};
 
             let coverage = { open: 0, lunch: 0, dinner: 0, close: 0 };
@@ -44,12 +43,25 @@ export function calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepa
                                 const start = shift.isCustom ? shift.customStart : tpl?.start;
                                 const end = shift.isCustom ? shift.customEnd : tpl?.end;
 
-                                if (start && end) {
+                                if (start && end && daySettings.open && daySettings.close) {
                                     const minMealDuration = parseInt(restaurantSettings.minMealCoverageDuration, 10) || 60;
-                                    if (calculateOverlap(start, end, daySettings.open, daySettings.lunchStart) > 0) coverage.open++;
-                                    if (calculateOverlap(start, end, daySettings.lunchStart, daySettings.lunchEnd) >= minMealDuration) coverage.lunch++;
-                                    if (calculateOverlap(start, end, daySettings.dinnerStart, daySettings.dinnerEnd) >= minMealDuration) coverage.dinner++;
-                                    if (calculateOverlap(start, end, daySettings.dinnerEnd, daySettings.close) > 0) coverage.close++;
+                                    
+                                    // Opening: Counts if shift starts AT or BEFORE opening.
+                                    if (timeToMinutes(start) <= timeToMinutes(daySettings.open)) {
+                                        coverage.open++;
+                                    }
+                                    // Lunch: Counts if shift overlaps with lunch period by at least the min duration.
+                                    if (calculateOverlap(start, end, daySettings.lunchStart, daySettings.lunchEnd) >= minMealDuration) {
+                                        coverage.lunch++;
+                                    }
+                                    // Dinner: Counts if shift overlaps with dinner period by at least the min duration.
+                                    if (calculateOverlap(start, end, daySettings.dinnerStart, daySettings.dinnerEnd) >= minMealDuration) {
+                                        coverage.dinner++;
+                                    }
+                                    // Closing: Counts if shift ends AT or AFTER closing.
+                                    if (timeToMinutes(end) >= timeToMinutes(daySettings.close)) {
+                                        coverage.close++;
+                                    }
                                 }
                             }
                         }
