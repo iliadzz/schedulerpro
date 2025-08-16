@@ -1,7 +1,7 @@
 // This file isolates all your Firebase Authentication logic. It handles showing the login screen,
 // processing sign-in and sign-up attempts, listening for authentication state changes, and logging the user out. It acts as the "gatekeeper" for your application.
 // js/firebase/auth.js
-import { users, setCurrentUser } from '../state.js';
+import { setCurrentUser } from '../state.js';
 import { applyRbacPermissions } from '../main.js';
 
 /**
@@ -27,26 +27,23 @@ export function setupAuthListeners() {
     if (window.auth) {
         window.auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // User is signed in. Directly fetch their profile from Firestore.
-                try {
-                    const userQuery = await window.db.collection('users').where('email', '==', user.email).limit(1).get();
-                    if (!userQuery.empty) {
-                        const userProfile = { id: userQuery.docs[0].id, ...userQuery.docs[0].data() };
-                        setCurrentUser(userProfile);
-                    } else {
-                        console.warn(`No profile found for ${user.email}, defaulting to restricted view.`);
-                        setCurrentUser({ email: user.email, role: 'User' });
-                    }
-                } catch (error) {
-                    console.error("Error fetching user profile:", error);
-                    setCurrentUser({ email: user.email, role: 'User' });
-                }
+                // User is signed in. Force a token refresh to get the latest custom claims.
+                const idTokenResult = await user.getIdTokenResult(true);
+
+                // Combine Firestore profile with token claims for the complete user object.
+                const userProfile = {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    claims: idTokenResult.claims // This now holds all our permissions!
+                };
+                setCurrentUser(userProfile);
 
                 // Apply permissions BEFORE initializing the app
                 applyRbacPermissions();
-                
+
                 showApp();
-                
+
                 // Call the main app initialization function (defined in main.js)
                 if (window.__startApp) {
                     window.__startApp();
@@ -60,7 +57,11 @@ export function setupAuthListeners() {
     } else {
         // This allows for offline or auth-less development.
         console.warn("Firebase Auth not found. Running in offline mode.");
-        setCurrentUser({ role: 'General Manager', displayName: 'Offline Admin' }); // Give full access for offline dev
+        const offlineUser = {
+            displayName: 'Offline Admin',
+            claims: { role: 'General Manager', is_gm: true, manage_settings: true, manage_roles: true, manage_employees: true, edit_schedule: true, view_schedule: true }
+        };
+        setCurrentUser(offlineUser);
         applyRbacPermissions();
         showApp();
         if (window.__startApp) {
@@ -70,8 +71,6 @@ export function setupAuthListeners() {
 
 
     // --- Login Form Event Listeners ---
-
-    // Using a single listener on the login container for efficiency
     loginContainer.addEventListener('click', (e) => {
         if (!window.auth) return;
 
@@ -87,8 +86,6 @@ export function setupAuthListeners() {
                     if (errorMsg) errorMsg.textContent = err.message;
                 });
         }
-
-
     });
 
 

@@ -7,9 +7,7 @@
   --ctl-radius: 4px;
 }
 
-admin-only, .manager-only {
-    display: none;
-}
+
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

@@ -18,17 +18,13 @@ import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventL
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
 
 export function applyRbacPermissions() {
-    if (!currentUser) return;
-
-    const role = currentUser.role || 'User';
-
-    const show = (selector) => document.querySelectorAll(selector).forEach(el => el.style.removeProperty('display'));
-
-    if (role === 'General Manager') {
-        show('.admin-only, .manager-only');
-    } else if (role === 'Manager') {
-        show('.manager-only');
+    if (!currentUser || !currentUser.claims) {
+        document.documentElement.dataset.role = 'User'; // Default to most restrictive
+        return;
     }
+    // Set the data-role attribute on the HTML tag based on the user's role claim.
+    const role = currentUser.claims.role || 'User';
+    document.documentElement.dataset.role = role.replace(/\s+/g, '-'); // e.g., "General Manager" -> "General-Manager"
 }
 
 
@@ -113,16 +109,16 @@ window.__startApp = function() {
     dom.thisWeekBtn.addEventListener('click', handleThisWeek);
     dom.weekPickerAlt.addEventListener('change', handleWeekChange);
     dom.printScheduleBtn.addEventListener('click', handlePrint);
-    
+
     const openCopyWeekModalBtn = document.getElementById('open-copy-week-modal-btn');
     if (openCopyWeekModalBtn) openCopyWeekModalBtn.addEventListener('click', handleCopyWeek);
-    
+
     const confirmCopyWeekBtn = document.getElementById('confirm-copy-week-btn');
     if (confirmCopyWeekBtn) confirmCopyWeekBtn.addEventListener('click', executeCopyWeek);
 
     dom.clearCurrentWeekBtn.addEventListener('click', handleClearWeek);
     dom.manageEventsBtn.addEventListener('click', showEventsModal);
-    
+
     dom.saveRestaurantSettingsBtn.addEventListener('click', handleSaveSettings);
     dom.backupAllDataBtn.addEventListener('click', handleFullBackup);
     dom.restoreDataInput.addEventListener('change', handleRestoreFile);
@@ -143,9 +139,9 @@ window.__startApp = function() {
     window.addEventListener('keydown', (event) => {
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
             event.preventDefault();
-            if (event.shiftKey) { 
+            if (event.shiftKey) {
                 HistoryManager.redo();
-            } else { 
+            } else {
                 HistoryManager.undo();
             }
             renderWeeklySchedule();
