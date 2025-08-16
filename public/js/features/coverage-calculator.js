@@ -3,6 +3,7 @@
 
 import { departments, restaurantSettings, scheduleAssignments, shiftTemplates, roles } from '../state.js';
 import { isEventOnDate } from '../ui/events.js';
+// Import the timeToMinutes function
 import { calculateOverlap, timeToMinutes } from '../utils.js';
 
 export function calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepartmentIds) {
@@ -37,31 +38,40 @@ export function calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepa
                     dayData.shifts.forEach(shift => {
                         if (shift.type === 'shift') {
                             const role = roles.find(r => r.id === shift.roleId);
-                            if (role && role.departmentId === dept.id) {
+                            let shiftDeptId = null;
+
+                            if (shift.isCustom) {
+                                if (role) {
+                                    shiftDeptId = role.departmentId;
+                                }
+                            } else {
+                                const tpl = shiftTemplates.find(st => st.id === shift.shiftTemplateId);
+                                if (tpl) {
+                                    shiftDeptId = tpl.departmentId;
+                                }
+                            }
+
+                            if (role && shiftDeptId === dept.id) {
                                 const tpl = shift.isCustom ? null : shiftTemplates.find(st => st.id === shift.shiftTemplateId);
                                 const start = shift.isCustom ? shift.customStart : tpl?.start;
                                 const end = shift.isCustom ? shift.customEnd : tpl?.end;
 
-                                // Ensure all necessary time settings exist before calculating
-                                if (start && end && daySettings.open && daySettings.close && daySettings.lunchStart && daySettings.lunchEnd && daySettings.dinnerStart && daySettings.dinnerEnd) {
+                                if (start && end && daySettings.open && daySettings.close) {
                                     const minMealDuration = parseInt(restaurantSettings.minMealCoverageDuration, 10) || 60;
                                     
-                                    // Opening: Counts if shift starts AT or BEFORE opening time.
+                                    // Opening: Counts if shift starts AT or BEFORE opening.
                                     if (timeToMinutes(start) <= timeToMinutes(daySettings.open)) {
                                         coverage.open++;
                                     }
-
                                     // Lunch: Counts if shift overlaps with lunch period by at least the min duration.
                                     if (calculateOverlap(start, end, daySettings.lunchStart, daySettings.lunchEnd) >= minMealDuration) {
                                         coverage.lunch++;
                                     }
-
                                     // Dinner: Counts if shift overlaps with dinner period by at least the min duration.
                                     if (calculateOverlap(start, end, daySettings.dinnerStart, daySettings.dinnerEnd) >= minMealDuration) {
                                         coverage.dinner++;
                                     }
-
-                                    // Closing: Counts if shift ends AT or AFTER closing time. A shift ending at 21:59 will not be counted if closing is 22:00.
+                                    // Closing: Counts if shift ends AT or AFTER closing.
                                     if (timeToMinutes(end) >= timeToMinutes(daySettings.close)) {
                                         coverage.close++;
                                     }
