@@ -17,6 +17,9 @@ import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFil
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
 
+// Flag to prevent the app from being initialized more than once
+let isAppInitialized = false;
+
 export function applyRbacPermissions() {
     if (!currentUser || !currentUser.claims) {
         document.documentElement.dataset.role = 'User'; // Default to most restrictive
@@ -30,6 +33,11 @@ export function applyRbacPermissions() {
 
 // --- Application Entry Point ---
 window.__startApp = function() {
+    // Prevent re-initialization
+    if (isAppInitialized) {
+        console.log("Application already initialized. Skipping...");
+        return;
+    }
     console.log("DOM and Auth ready. Initializing application...");
 
     // Initialize Firestore listeners first to ensure data is available
@@ -176,6 +184,9 @@ window.__startApp = function() {
     } else {
       document.querySelector('.tab-link[data-tab="scheduler-tab"]')?.click();
     }
+    
+    // Set the flag to true after the first successful initialization
+    isAppInitialized = true; 
 }
 
 // --- Initialize Auth ---

@@ -1,8 +1,7 @@
-// This file isolates all your Firebase Authentication logic. It handles showing the login screen,
-// processing sign-in and sign-up attempts, listening for authentication state changes, and logging the user out. It acts as the "gatekeeper" for your application.
 // js/firebase/auth.js
 import { setCurrentUser } from '../state.js';
 import { applyRbacPermissions } from '../main.js';
+import { cleanupDataListeners } from './firestore.js'; // Import the new function
 
 /**
  * Sets up all Firebase Authentication listeners and login form handlers.
@@ -51,6 +50,10 @@ export function setupAuthListeners() {
             } else {
                 // User is signed out.
                 setCurrentUser(null);
+                
+                // Clean up old listeners before showing the login screen
+                cleanupDataListeners(); 
+                
                 showLogin();
             }
         });
@@ -93,6 +96,7 @@ export function setupAuthListeners() {
     if (exitBtn) {
         exitBtn.addEventListener('click', () => {
             if (window.auth) {
+                // The onAuthStateChanged listener above will handle the cleanup
                 window.auth.signOut();
             }
         });

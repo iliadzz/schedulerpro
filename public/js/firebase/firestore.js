@@ -17,10 +17,10 @@ import { renderShiftTemplates } from '../ui/shifts.js';
 import { renderWeeklySchedule } from '../ui/scheduler.js';
 import { initSettingsTab } from '../ui/settings.js';
 
-// --- Module-level variable ---
-// By declaring this here, it's accessible to all functions in this file. THIS IS THE FIX.
+// --- Module-level variables ---
 const originalSetItem = window.localStorage.setItem.bind(window.localStorage);
-
+// Array to hold all the unsubscribe functions from our listeners
+let activeListeners = [];
 
 // --- Private Helper Function ---
 async function syncCollectionToFirestore(collectionName, localData) {
@@ -83,10 +83,22 @@ export function initializeSync() {
 }
 
 /**
+ * Detaches all active Firestore listeners.
+ */
+export function cleanupDataListeners() {
+    console.log(`Cleaning up ${activeListeners.length} Firestore listeners.`);
+    activeListeners.forEach(unsubscribe => unsubscribe());
+    activeListeners = []; // Clear the array
+}
+
+/**
  * Sets up real-time listeners on all Firestore collections.
  */
 export function initializeDataListeners() {
-    if (!window.db) return;
+    if (!window.db || activeListeners.length > 0) {
+        // Prevent re-attaching if listeners are already active
+        return;
+    }
 
     const renderAll = () => {
         renderDepartments();
@@ -97,66 +109,80 @@ export function initializeDataListeners() {
         renderWeeklySchedule();
     };
 
-    window.db.collection('departments').onSnapshot(snapshot => {
-        console.log("Firestore: Departments updated.");
-        const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        departments.length = 0;
-        Array.prototype.push.apply(departments, updatedData);
-        originalSetItem('departments', JSON.stringify(departments));
-        renderAll();
-    });
+    activeListeners.push(
+        window.db.collection('departments').onSnapshot(snapshot => {
+            console.log("Firestore: Departments updated.");
+            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            departments.length = 0;
+            Array.prototype.push.apply(departments, updatedData);
+            originalSetItem('departments', JSON.stringify(departments));
+            renderAll();
+        })
+    );
 
-    window.db.collection('roles').onSnapshot(snapshot => {
-        console.log("Firestore: Roles updated.");
-        const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        roles.length = 0;
-        Array.prototype.push.apply(roles, updatedData);
-        originalSetItem('roles', JSON.stringify(roles));
-        renderAll();
-    });
+    activeListeners.push(
+        window.db.collection('roles').onSnapshot(snapshot => {
+            console.log("Firestore: Roles updated.");
+            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            roles.length = 0;
+            Array.prototype.push.apply(roles, updatedData);
+            originalSetItem('roles', JSON.stringify(roles));
+            renderAll();
+        })
+    );
 
-    window.db.collection('users').onSnapshot(snapshot => {
-        console.log("Firestore: Users updated.");
-        const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        users.length = 0;
-        Array.prototype.push.apply(users, updatedData);
-        originalSetItem('users', JSON.stringify(users));
-        renderAll();
-    });
+    activeListeners.push(
+        window.db.collection('users').onSnapshot(snapshot => {
+            console.log("Firestore: Users updated.");
+            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            users.length = 0;
+            Array.prototype.push.apply(users, updatedData);
+            originalSetItem('users', JSON.stringify(users));
+            renderAll();
+        })
+    );
 
-    window.db.collection('shiftTemplates').onSnapshot(snapshot => {
-        console.log("Firestore: Shift Templates updated.");
-        const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        shiftTemplates.length = 0;
-        Array.prototype.push.apply(shiftTemplates, updatedData);
-        originalSetItem('shiftTemplates', JSON.stringify(shiftTemplates));
-        renderAll();
-    });
+    activeListeners.push(
+        window.db.collection('shiftTemplates').onSnapshot(snapshot => {
+            console.log("Firestore: Shift Templates updated.");
+            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            shiftTemplates.length = 0;
+            Array.prototype.push.apply(shiftTemplates, updatedData);
+            originalSetItem('shiftTemplates', JSON.stringify(shiftTemplates));
+            renderAll();
+        })
+    );
 
-    window.db.collection('events').onSnapshot(snapshot => {
-        console.log("Firestore: Events updated.");
-        const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        events.length = 0;
-        Array.prototype.push.apply(events, updatedData);
-        originalSetItem('events', JSON.stringify(events));
-        renderWeeklySchedule();
-    });
+    activeListeners.push(
+        window.db.collection('events').onSnapshot(snapshot => {
+            console.log("Firestore: Events updated.");
+            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            events.length = 0;
+            Array.prototype.push.apply(events, updatedData);
+            originalSetItem('events', JSON.stringify(events));
+            renderWeeklySchedule();
+        })
+    );
 
-    window.db.collection('scheduleAssignments').onSnapshot(snapshot => {
-        console.log("Firestore: Schedule updated.");
-        Object.keys(scheduleAssignments).forEach(key => delete scheduleAssignments[key]);
-        snapshot.forEach(doc => { scheduleAssignments[doc.id] = doc.data() });
-        originalSetItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
-        renderWeeklySchedule();
-    });
+    activeListeners.push(
+        window.db.collection('scheduleAssignments').onSnapshot(snapshot => {
+            console.log("Firestore: Schedule updated.");
+            Object.keys(scheduleAssignments).forEach(key => delete scheduleAssignments[key]);
+            snapshot.forEach(doc => { scheduleAssignments[doc.id] = doc.data() });
+            originalSetItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
+            renderWeeklySchedule();
+        })
+    );
 
-    window.db.collection('settings').doc('main').onSnapshot(doc => {
-        console.log("Firestore: Settings updated.");
-        const newSettings = doc.exists ? doc.data() : {};
-        Object.keys(restaurantSettings).forEach(key => delete restaurantSettings[key]);
-        Object.assign(restaurantSettings, newSettings);
-        originalSetItem('restaurantSettings', JSON.stringify(restaurantSettings));
-        initSettingsTab();
-        renderWeeklySchedule();
-    });
+    activeListeners.push(
+        window.db.collection('settings').doc('main').onSnapshot(doc => {
+            console.log("Firestore: Settings updated.");
+            const newSettings = doc.exists ? doc.data() : {};
+            Object.keys(restaurantSettings).forEach(key => delete restaurantSettings[key]);
+            Object.assign(restaurantSettings, newSettings);
+            originalSetItem('restaurantSettings', JSON.stringify(restaurantSettings));
+            initSettingsTab();
+            renderWeeklySchedule();
+        })
+    );
 }
