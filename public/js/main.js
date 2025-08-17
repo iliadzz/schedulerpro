@@ -17,8 +17,15 @@ import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFil
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
 
-// Flag to prevent the app from being initialized more than once
+// Flag to prevent the app from being initialized more than once per session
 let isAppInitialized = false;
+
+/**
+ * Resets the initialization flag when a user logs out.
+ */
+export function resetAppInitialization() {
+    isAppInitialized = false;
+}
 
 export function applyRbacPermissions() {
     if (!currentUser || !currentUser.claims) {

@@ -1,7 +1,7 @@
 // js/firebase/auth.js
 import { setCurrentUser } from '../state.js';
-import { applyRbacPermissions } from '../main.js';
-import { cleanupDataListeners } from './firestore.js'; // Import the new function
+import { applyRbacPermissions, resetAppInitialization } from '../main.js';
+import { cleanupDataListeners } from './firestore.js';
 
 /**
  * Sets up all Firebase Authentication listeners and login form handlers.
@@ -50,11 +50,9 @@ export function setupAuthListeners() {
             } else {
                 // User is signed out.
                 setCurrentUser(null);
-                
-                // Clean up old listeners before showing the login screen
-                cleanupDataListeners(); 
-                
-                showLogin();
+                cleanupDataListeners();      // 1. Clean up old listeners
+                resetAppInitialization();    // 2. Reset the app flag
+                showLogin();                 // 3. Show the login screen
             }
         });
     } else {
