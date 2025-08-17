@@ -1,6 +1,7 @@
 // js/ui/scheduler.js
 
-import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments } from '../state.js';
+// --- THIS IS THE FIX: Import 'departments' from the central state ---
+import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments, departments } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { formatDate, getWeekRange, getDatesOfWeek, formatTimeForDisplay, calculateShiftDuration, getContrastColor, generateId } from '../utils.js';
@@ -39,7 +40,6 @@ function clearEmployeeWeek(userId, weekDates) {
             const dateStr = formatDate(date);
             const dayData = scheduleAssignments[`${userId}-${dateStr}`];
             if (dayData && dayData.shifts) {
-                // Create a copy of the shifts array to iterate over, as deleteAssignedShift will modify the original
                 [...dayData.shifts].forEach(assignment => {
                     deleteAssignedShift(userId, dateStr, assignment.assignmentId);
                 });
@@ -123,7 +123,7 @@ export function executeCopyWeek() {
                     scheduleAssignments[sourceKey].shifts.forEach(shiftToCopy => {
                         const newShift = { ...shiftToCopy, assignmentId: generateId('assign') };
                         const command = new ModifyAssignmentCommand(user.id, targetDateStr, newShift);
-                        HistoryManager.doAction(command); // Use HistoryManager to make it undoable
+                        HistoryManager.doAction(command);
                     });
                 }
             }
@@ -184,9 +184,8 @@ export function renderWeeklySchedule() {
         visibleUsers = visibleUsers.filter(user => managerDepts.includes(user.departmentId));
     }
 
-    // --- CHANGE: Sort by Department first, then by the existing sort order. ---
     visibleUsers.sort((a, b) => {
-        const deptA = departments.find(d => d.id === a.departmentId)?.name || 'ZZZ'; // Unassigned last
+        const deptA = departments.find(d => d.id === a.departmentId)?.name || 'ZZZ';
         const deptB = departments.find(d => d.id === b.departmentId)?.name || 'ZZZ';
         if (deptA.localeCompare(deptB) !== 0) {
             return deptA.localeCompare(deptB);
@@ -202,39 +201,24 @@ export function renderWeeklySchedule() {
 
     const canEditSchedule = currentUser && currentUser.role !== 'User';
     
-    // --- CHANGE: Logic to track the current department and insert headers ---
     let lastDepartmentId = null;
 
     visibleUsers.forEach(user => {
-        // Check if the department has changed from the previous user.
         if (user.departmentId !== lastDepartmentId) {
             const dept = departments.find(d => d.id === user.departmentId);
             const deptName = dept ? dept.name : getTranslatedString('optNoDept');
             
-            // Create the department header row.
             const headerRow = document.createElement('div');
             headerRow.className = 'department-header-row';
             headerRow.textContent = deptName;
             dom.scheduleGridBody.appendChild(headerRow);
 
-            // Create empty cells to align with the grid columns.
-            for (let i = 0; i < 7; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = 'department-header-row';
-                 // Ensure event highlighting continues through this row
-                const dateObj = weekDates[i];
-                if(isEventOnDate(dateObj).length > 0) {
-                    emptyCell.classList.add('is-event-day');
-                }
-                dom.scheduleGridBody.appendChild(emptyCell);
-            }
             lastDepartmentId = user.departmentId;
         }
 
 
         let weeklyHours = 0;
         const userRowLabel = document.createElement('div');
-        // --- CHANGE: Add 'indented' class for styling ---
         userRowLabel.className = 'employee-row-label indented';
         if (canEditSchedule) {
             userRowLabel.classList.add('draggable-employee-row');

@@ -1421,22 +1421,24 @@ ul li .item-actions button {
 }
 /* --- Styles for Department Grouping in Scheduler --- */
 
+/* --- Styles for Department Grouping in Scheduler --- */
+
 .department-header-row {
-    /* --- This is the main style for the department header cell --- */
-    grid-column: 1 / -1; /* Make the header span all 8 columns */
+    /* This style makes the header cell span the entire width of the schedule grid. */
+    grid-column: 1 / -1; 
     font-weight: bold;
     color: #2c3e50;
-    background-color: #e9ecef;
+    background-color: #e0e0e0; /* A slightly darker grey to stand out */
     padding: 4px 8px;
     border-bottom: 1px solid #ccc;
-    border-right: 1px solid #ccc;
+    border-top: 1px solid #ccc; /* Add a top border for better separation */
     font-size: 0.95em;
     position: sticky;
     left: 0;
-    z-index: 6; /* Higher than employee rows to appear on top */
+    z-index: 6; /* Must be higher than employee rows (z-index: 5) */
 }
 
 .employee-row-label.indented .employee-name-hours {
-    /* --- This adds the indentation to the employee names --- */
+    /* This adds the indentation to the employee names below the header. */
     padding-left: 15px;
 }
