@@ -31,6 +31,9 @@ function handleVacationClick(event) {
 function deleteAssignedShift(userId, dateStr, assignmentId) {
     const command = new DeleteAssignmentCommand(userId, dateStr, assignmentId);
     HistoryManager.doAction(command);
+    // --- THIS IS THE FIX ---
+    // After a delete action, the schedule must be re-rendered to show the change.
+    renderWeeklySchedule();
 }
 
 function clearEmployeeWeek(userId, weekDates) {
@@ -118,7 +121,11 @@ export function executeCopyWeek() {
                 const targetKey = `${user.id}-${targetDateStr}`;
 
                 if (scheduleAssignments[sourceKey] && scheduleAssignments[sourceKey].shifts) {
-                    scheduleAssignments[targetKey] = { shifts: [] };
+                    // Clear existing shifts for the target day before copying new ones
+                    if (scheduleAssignments[targetKey] && scheduleAssignments[targetKey].shifts) {
+                        scheduleAssignments[targetKey].shifts = [];
+                    }
+
                     scheduleAssignments[sourceKey].shifts.forEach(shiftToCopy => {
                         const newShift = { ...shiftToCopy, assignmentId: generateId('assign') };
                         const command = new ModifyAssignmentCommand(user.id, targetDateStr, newShift);
@@ -183,30 +190,23 @@ export function renderWeeklySchedule() {
         visibleUsers = visibleUsers.filter(user => managerDepts.includes(user.departmentId));
     }
 
-    // --- THIS IS THE FIX ---
-    // Create a map for quick department sorting. The index in the main 'departments'
-    // array determines the sort order. Unassigned departments get a high number to appear last.
     const departmentOrderMap = new Map();
     departments.forEach((dept, index) => {
         departmentOrderMap.set(dept.id, index);
     });
 
     visibleUsers.sort((a, b) => {
-        // Get the sort order number for each employee's department.
         const orderA = departmentOrderMap.get(a.departmentId) ?? 999;
         const orderB = departmentOrderMap.get(b.departmentId) ?? 999;
 
-        // 1. Primary Sort: Department Order
         if (orderA !== orderB) {
             return orderA - orderB;
         }
 
-        // 2. Secondary Sort: Employee Drag-and-Drop Order
         const ak = sortKeyForEmployee(a);
         const bk = sortKeyForEmployee(b);
         if (ak !== bk) return ak - bk;
         
-        // 3. Tertiary Sort: Display Name (fallback)
         return (a.displayName || '').localeCompare(b.displayName || '') || a.id.localeCompare(b.id);
     });
 
@@ -337,10 +337,17 @@ export function renderWeeklySchedule() {
                 }
 
                 if (canEditSchedule) {
-                    itemDiv.querySelector('.delete-assigned-shift-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        deleteAssignedShift(user.id, dateStr, assignment.assignmentId);
-                    });
+                    // --- THIS IS THE FIX ---
+                    // The event listener for the delete button is now correctly placed.
+                    // It also includes e.stopPropagation() to prevent the click from
+                    // triggering the edit modal on the parent element.
+                    const deleteBtn = itemDiv.querySelector('.delete-assigned-shift-btn');
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Stop the click from bubbling up to the shift item
+                            deleteAssignedShift(user.id, dateStr, assignment.assignmentId);
+                        });
+                    }
                 }
                 shiftsContainer.appendChild(itemDiv);
             });
