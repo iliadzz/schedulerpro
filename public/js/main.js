@@ -5,7 +5,8 @@ import { HistoryManager } from './features/history.js';
 import { populateTimeSelectsForElements } from './utils.js';
 import * as dom from './dom.js';
 import { setupAuthListeners } from './firebase/auth.js';
-import { initializeSync, initializeDataListeners } from './firebase/firestore.js';
+// --- CHANGE: Import listener management functions from firestore.js ---
+import { initializeSync, initializeDataListeners, cleanupDataListeners } from './firebase/firestore.js';
 import { currentUser } from './state.js';
 
 import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, handleSaveDepartment } from './ui/departments.js';
@@ -17,11 +18,11 @@ import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFil
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
 
-// Flag to prevent the app from being initialized more than once per session
+// --- CHANGE: Flag to prevent the app from being initialized more than once per session ---
 let isAppInitialized = false;
 
 /**
- * Resets the initialization flag when a user logs out.
+ * Resets the initialization flag when a user logs out. This is exported so auth.js can call it.
  */
 export function resetAppInitialization() {
     isAppInitialized = false;
@@ -40,7 +41,7 @@ export function applyRbacPermissions() {
 
 // --- Application Entry Point ---
 window.__startApp = function() {
-    // Prevent re-initialization
+    // --- CHANGE: Guard to ensure this entire initialization function only runs once. ---
     if (isAppInitialized) {
         console.log("Application already initialized. Skipping...");
         return;
@@ -50,7 +51,7 @@ window.__startApp = function() {
     // Initialize Firestore listeners first to ensure data is available
     initializeDataListeners();
 
-    // Then initialize the sync mechanism
+    // Then initialize the sync mechanism that intercepts localStorage.setItem
     initializeSync();
 
     populateRoleColorPalette();
@@ -177,6 +178,13 @@ window.__startApp = function() {
             roleColorPopup.style.display = 'none';
         }
     });
+    
+    // --- CHANGE: Add listener to clean up Firestore subscriptions when the user closes the tab. ---
+    window.addEventListener('beforeunload', () => {
+        cleanupDataListeners();
+        console.log("Firestore listeners cleaned up on tab close.");
+    });
+
 
     document.querySelectorAll('.modal .close-modal-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -192,7 +200,7 @@ window.__startApp = function() {
       document.querySelector('.tab-link[data-tab="scheduler-tab"]')?.click();
     }
     
-    // Set the flag to true after the first successful initialization
+    // --- CHANGE: Set the flag to true after the first successful initialization ---
     isAppInitialized = true; 
 }
 

@@ -19,7 +19,7 @@ import { initSettingsTab } from '../ui/settings.js';
 
 // --- Module-level variables ---
 const originalSetItem = window.localStorage.setItem.bind(window.localStorage);
-// Array to hold all the unsubscribe functions from our listeners
+// --- CHANGE: Array to hold all the unsubscribe functions from our listeners ---
 let activeListeners = [];
 
 // --- Private Helper Function ---
@@ -52,11 +52,10 @@ async function syncCollectionToFirestore(collectionName, localData) {
 // --- Exported Main Functions ---
 
 export function initializeSync() {
-    // Define which keys should trigger a sync to Firestore
     const syncableKeys = ['users', 'departments', 'roles', 'events', 'shiftTemplates', 'scheduleAssignments', 'restaurantSettings'];
 
     window.localStorage.setItem = function(key, value) {
-        originalSetItem(key, value); // Always save to local storage first
+        originalSetItem(key, value); 
 
         if (!syncableKeys.includes(key) || !window.db) {
             return;
@@ -83,7 +82,8 @@ export function initializeSync() {
 }
 
 /**
- * Detaches all active Firestore listeners.
+ * --- NEW FUNCTION ---
+ * Detaches all active Firestore listeners. This is called on logout or tab close.
  */
 export function cleanupDataListeners() {
     console.log(`Cleaning up ${activeListeners.length} Firestore listeners.`);
@@ -93,6 +93,7 @@ export function cleanupDataListeners() {
 
 /**
  * Sets up real-time listeners on all Firestore collections.
+ * --- CHANGE: Now prevents re-attaching listeners and adds them to a managed array. ---
  */
 export function initializeDataListeners() {
     if (!window.db || activeListeners.length > 0) {
@@ -109,8 +110,11 @@ export function initializeDataListeners() {
         renderWeeklySchedule();
     };
 
+    // --- CHANGE: Each listener is now pushed to the activeListeners array for cleanup. ---
+    // --- Also, each listener now has the 'hasPendingWrites' guard. ---
     activeListeners.push(
         window.db.collection('departments').onSnapshot(snapshot => {
+            if (snapshot.metadata.hasPendingWrites) return; // Prevent feedback loop
             console.log("Firestore: Departments updated.");
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             departments.length = 0;
@@ -122,6 +126,7 @@ export function initializeDataListeners() {
 
     activeListeners.push(
         window.db.collection('roles').onSnapshot(snapshot => {
+            if (snapshot.metadata.hasPendingWrites) return;
             console.log("Firestore: Roles updated.");
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             roles.length = 0;
@@ -133,6 +138,7 @@ export function initializeDataListeners() {
 
     activeListeners.push(
         window.db.collection('users').onSnapshot(snapshot => {
+            if (snapshot.metadata.hasPendingWrites) return;
             console.log("Firestore: Users updated.");
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             users.length = 0;
@@ -144,6 +150,7 @@ export function initializeDataListeners() {
 
     activeListeners.push(
         window.db.collection('shiftTemplates').onSnapshot(snapshot => {
+            if (snapshot.metadata.hasPendingWrites) return;
             console.log("Firestore: Shift Templates updated.");
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             shiftTemplates.length = 0;
@@ -155,6 +162,7 @@ export function initializeDataListeners() {
 
     activeListeners.push(
         window.db.collection('events').onSnapshot(snapshot => {
+            if (snapshot.metadata.hasPendingWrites) return;
             console.log("Firestore: Events updated.");
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             events.length = 0;
@@ -166,6 +174,7 @@ export function initializeDataListeners() {
 
     activeListeners.push(
         window.db.collection('scheduleAssignments').onSnapshot(snapshot => {
+            if (snapshot.metadata.hasPendingWrites) return;
             console.log("Firestore: Schedule updated.");
             Object.keys(scheduleAssignments).forEach(key => delete scheduleAssignments[key]);
             snapshot.forEach(doc => { scheduleAssignments[doc.id] = doc.data() });
@@ -176,6 +185,7 @@ export function initializeDataListeners() {
 
     activeListeners.push(
         window.db.collection('settings').doc('main').onSnapshot(doc => {
+            if (doc.metadata.hasPendingWrites) return;
             console.log("Firestore: Settings updated.");
             const newSettings = doc.exists ? doc.data() : {};
             Object.keys(restaurantSettings).forEach(key => delete restaurantSettings[key]);

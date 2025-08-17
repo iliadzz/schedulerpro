@@ -1,7 +1,23 @@
 // js/state.js
 
+// --- CHANGE: A helper function to delay execution, preventing rapid-fire saves ---
+/**
+ * Creates a debounced function that delays invoking the original function until after
+ * `wait` milliseconds have elapsed since the last time the debounced function was invoked.
+ * @param {Function} func The function to debounce.
+ * @param {number} wait The number of milliseconds to delay.
+ * @returns {Function} Returns the new debounced function.
+ */
+const debounce = (func, wait = 400) => {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+};
+
 // --- Core Data Collections ---
-// These are loaded from localStorage and represent the main data of the application.
 export let departments = JSON.parse(localStorage.getItem('departments')) || [];
 export let roles = JSON.parse(localStorage.getItem('roles')) || [];
 export let users = JSON.parse(localStorage.getItem('users')) || [];
@@ -11,48 +27,45 @@ export let events = JSON.parse(localStorage.getItem('events')) || [];
 export let restaurantSettings = JSON.parse(localStorage.getItem('restaurantSettings')) || {};
 
 // --- Logged-in User State ---
-export let currentUser = null; // To hold the profile of the logged-in user
+export let currentUser = null; 
 
-// Function to set the current user
 export function setCurrentUser(user) {
     currentUser = user;
 }
 
-
 // --- Save Functions ---
-// Functions to persist the core data collections to localStorage and Firestore.
-export function saveDepartments() {
-    localStorage.setItem('departments', JSON.stringify(departments));
-}
-export function saveRoles() {
-    localStorage.setItem('roles', JSON.stringify(roles));
-}
-export function saveUsers() {
-    localStorage.setItem('users', JSON.stringify(users));
-}
-export function saveShiftTemplates() {
-    localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates));
-}
-export function saveScheduleAssignments() {
-    localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
-}
-export function saveEvents() {
-    localStorage.setItem('events', JSON.stringify(events));
-}
-export function saveRestaurantSettings() {
-    localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings));
-}
+// --- CHANGE: Each save function is now debounced. ---
+// This prevents a "write storm" to Firestore when multiple changes happen in quick succession.
+// For example, clicking multiple day pills on a shift template will now result in only ONE write operation.
 
-/**
- * Saves the scheduler's currently viewed date to local storage.
- */
+const _saveDepartments = () => localStorage.setItem('departments', JSON.stringify(departments));
+export const saveDepartments = debounce(_saveDepartments, 500);
+
+const _saveRoles = () => localStorage.setItem('roles', JSON.stringify(roles));
+export const saveRoles = debounce(_saveRoles, 500);
+
+const _saveUsers = () => localStorage.setItem('users', JSON.stringify(users));
+export const saveUsers = debounce(_saveUsers, 500);
+
+const _saveShiftTemplates = () => localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates));
+export const saveShiftTemplates = debounce(_saveShiftTemplates, 500);
+
+const _saveScheduleAssignments = () => localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
+export const saveScheduleAssignments = debounce(_saveScheduleAssignments, 500);
+
+const _saveEvents = () => localStorage.setItem('events', JSON.stringify(events));
+export const saveEvents = debounce(_saveEvents, 500);
+
+const _saveRestaurantSettings = () => localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings));
+export const saveRestaurantSettings = debounce(_saveRestaurantSettings, 500);
+
+
 export function saveCurrentViewDate() {
     localStorage.setItem('schedulerCurrentViewDate', currentViewDate.toISOString());
 }
 
 
 // --- Application UI State ---
-// These variables manage the current state of the user interface.
 const savedDate = localStorage.getItem('schedulerCurrentViewDate');
 export let currentViewDate = savedDate ? new Date(savedDate) : new Date();
 
@@ -70,13 +83,6 @@ export let copyConflictQueue = [];
 export let currentConflictResolver = null;
 export let tempEventSpecificDates = [];
 export let clearWeekContext = { usersToClear: [], datesToClear: [] };
-
-
-// --- History (Undo/Redo) State ---
-// This is now managed privately within the history.js module.
-// We no longer export these from the global state.
-// export let historyStack = [];
-// export let historyPointer = -1;
 
 // --- Constants ---
 export const DEFAULT_VACATION_DAYS = 0;
