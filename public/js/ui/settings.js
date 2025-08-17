@@ -110,6 +110,12 @@ function renderMinCoverageForDepartment(deptId) {
  * Renders the entire settings tab UI.
  */
 export function initSettingsTab() {
+    // NEW: Set the value of the week start day selector
+    const weekStartDaySelect = document.getElementById('week-start-day-select');
+    if (weekStartDaySelect) {
+        weekStartDaySelect.value = restaurantSettings.weekStartDay || 'mon';
+    }
+
     if (!restaurantHoursGrid) return;
     restaurantHoursGrid.innerHTML = '';
 
@@ -158,6 +164,12 @@ export function initSettingsTab() {
  * Saves the restaurant hours and minimum coverage settings.
  */
 export function handleSaveSettings() {
+    // NEW: Save the week start day setting
+    const weekStartDaySelect = document.getElementById('week-start-day-select');
+    if (weekStartDaySelect) {
+        restaurantSettings.weekStartDay = weekStartDaySelect.value;
+    }
+
     const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
     days.forEach(day => {
@@ -171,6 +183,9 @@ export function handleSaveSettings() {
     });
 
     const selectedDeptId = minCoverageDepartmentSelect.value;
+    if (!restaurantSettings.minCoverage) {
+        restaurantSettings.minCoverage = {};
+    }
     if (!restaurantSettings.minCoverage[selectedDeptId]) {
         restaurantSettings.minCoverage[selectedDeptId] = {};
     }

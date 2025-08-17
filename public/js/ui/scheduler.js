@@ -1,7 +1,7 @@
 // js/ui/scheduler.js
 
 // --- Import the new employeeDisplayFormat state variable ---
-import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments, departments, employeeDisplayFormat } from '../state.js';
+import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments, departments, employeeDisplayFormat, weekStartsOn } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { formatDate, getWeekRange, getDatesOfWeek, formatTimeForDisplay, calculateShiftDuration, getContrastColor, generateId } from '../utils.js';
@@ -130,10 +130,10 @@ export function executeCopyWeek() {
     }
 
     const sourceDate = new Date(sourceDateInput.value + 'T00:00:00');
-    const sourceWeek = getWeekRange(sourceDate);
+    const sourceWeek = getWeekRange(sourceDate, weekStartsOn());
     const sourceWeekDates = getDatesOfWeek(sourceWeek.start);
 
-    const targetWeek = getWeekRange(currentViewDate);
+    const targetWeek = getWeekRange(currentViewDate, weekStartsOn());
     const targetWeekDates = getDatesOfWeek(targetWeek.start);
 
     const selectedDepartmentIds = window.selectedDepartmentIds || ['all'];
@@ -179,7 +179,7 @@ export function executeCopyWeek() {
 export function handleClearWeek() {
     if (!clearWeekConfirmModal) return;
 
-    const week = getWeekRange(currentViewDate);
+    const week = getWeekRange(currentViewDate, weekStartsOn());
     const weekStartStr = formatDate(week.start);
     const weekEndStr = formatDate(week.end);
     if (clearWeekConfirmText) {
@@ -193,7 +193,7 @@ export function initClearWeekModalListeners() {
     if (!clearWeekConfirmModal) return;
 
     const performClearAction = (filter) => {
-        const weekDates = getDatesOfWeek(getWeekRange(currentViewDate).start);
+        const weekDates = getDatesOfWeek(getWeekRange(currentViewDate, weekStartsOn()).start);
         const visibleUsers = users.filter(user => user.isVisible !== false);
 
         visibleUsers.forEach(user => {
@@ -242,21 +242,32 @@ export function initClearWeekModalListeners() {
 export function renderWeeklySchedule() {
     if (!dom.scheduleGridBody) { return; }
 
+    const startDay = weekStartsOn(); // Get the current week start day setting
+
     if (dom.weekPickerAlt) dom.weekPickerAlt.value = formatDate(currentViewDate);
 
     dom.scheduleGridBody.innerHTML = '';
-    const week = getWeekRange(currentViewDate);
+    const week = getWeekRange(currentViewDate, startDay);
     const weekDates = getDatesOfWeek(week.start);
 
     const dayHeaders = document.querySelectorAll('.schedule-header-row .header-day');
+    
+    // Define the order of days based on the start day setting.
+    // This ensures the header displays "Mon, Tue, Wed..." or "Sun, Mon, Tue..." correctly.
+    const dayKeyOrder = startDay === 'mon' 
+        ? ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+        : ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
     dayHeaders.forEach((header, index) => {
         if (weekDates[index]) {
             const dateObj = weekDates[index];
-            const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][dateObj.getDay()];
+            const dayKey = dayKeyOrder[index]; // Use the defined order
             const dayInitial = getTranslatedString('day' + dayKey.charAt(0).toUpperCase() + dayKey.slice(1));
+            
             let headerHTML = `${dayInitial} - ${dateObj.getDate()}`;
             const todaysEvents = isEventOnDate(dateObj);
             header.classList.toggle('is-event-day', todaysEvents.length > 0);
+            
             if (todaysEvents.length > 0) {
                 header.style.backgroundColor = todaysEvents[0].color || '';
                 headerHTML += ` <span class="event-header-name">| ${todaysEvents.map(e => e.name).join(', ')}</span>`;
@@ -265,6 +276,7 @@ export function renderWeeklySchedule() {
             }
             header.innerHTML = headerHTML;
             header.dataset.date = formatDate(dateObj);
+            header.dataset.day = dayKey.charAt(0).toUpperCase() + dayKey.slice(1);
         }
     });
 
