@@ -27,7 +27,6 @@ export function ModifyAssignmentCommand(userId, dateStr, newAssignment, oldAssig
         } else {
             dayData.shifts.push(this.newAssignment);
         }
-        // FIX: Pass the specific document ID that was changed to the save function.
         saveScheduleAssignments([this.assignmentKey]);
         renderWeeklySchedule();
     };
@@ -41,13 +40,11 @@ export function ModifyAssignmentCommand(userId, dateStr, newAssignment, oldAssig
                 dayData.shifts[index] = this.oldAssignment;
             } else {
                 dayData.shifts.splice(index, 1);
-                 // If the last shift is removed, delete the whole entry
-                if (dayData.shifts.length === 0) {
-                    delete scheduleAssignments[this.assignmentKey];
-                }
             }
         }
-        // FIX: Pass the specific document ID that was changed to the save function.
+        if (dayData && dayData.shifts.length === 0) {
+            delete scheduleAssignments[this.assignmentKey];
+        }
         saveScheduleAssignments([this.assignmentKey]);
         renderWeeklySchedule();
     };
@@ -66,12 +63,11 @@ export function DeleteAssignmentCommand(userId, dateStr, assignmentId) {
             const index = dayData.shifts.findIndex(a => a.assignmentId === this.assignmentId);
             if (index > -1) {
                 this.deletedAssignment = dayData.shifts.splice(index, 1)[0];
-                if (dayData.shifts.length === 0) {
-                    delete scheduleAssignments[this.assignmentKey];
-                }
+            }
+            if (dayData.shifts.length === 0) {
+                delete scheduleAssignments[this.assignmentKey];
             }
         }
-        // FIX: Pass the specific document ID that was changed to the save function.
         saveScheduleAssignments([this.assignmentKey]);
         renderWeeklySchedule();
     };
@@ -81,7 +77,6 @@ export function DeleteAssignmentCommand(userId, dateStr, assignmentId) {
         const dayData = scheduleAssignments[this.assignmentKey] || { shifts: [] };
         scheduleAssignments[this.assignmentKey] = dayData;
         dayData.shifts.push(this.deletedAssignment);
-        // FIX: Pass the specific document ID that was changed to the save function.
         saveScheduleAssignments([this.assignmentKey]);
         renderWeeklySchedule();
     };
@@ -116,12 +111,13 @@ export function DragDropCommand(dragDetails) {
 
         if (!this.isCopy) {
             const sourceDay = scheduleAssignments[this.sourceKey];
-            const index = sourceDay.shifts.findIndex(a => a.assignmentId === dragDetails.assignmentId);
-            if (index > -1) sourceDay.shifts.splice(index, 1);
-            if (sourceDay.shifts.length === 0) delete scheduleAssignments[this.sourceKey];
+            if (sourceDay && sourceDay.shifts) {
+                const index = sourceDay.shifts.findIndex(a => a.assignmentId === dragDetails.assignmentId);
+                if (index > -1) sourceDay.shifts.splice(index, 1);
+                if (sourceDay.shifts.length === 0) delete scheduleAssignments[this.sourceKey];
+            }
             dirtyKeys.push(this.sourceKey);
         }
-        // FIX: Pass all modified document IDs to the save function.
         saveScheduleAssignments(dirtyKeys);
         renderWeeklySchedule();
     };
@@ -135,13 +131,14 @@ export function DragDropCommand(dragDetails) {
         const dirtyKeys = [this.targetKey];
 
         if (!this.isCopy) {
-            const sourceDay = scheduleAssignments[this.sourceKey] || { shifts: [] };
-            scheduleAssignments[this.sourceKey] = sourceDay;
+            if (!scheduleAssignments[this.sourceKey]) {
+                scheduleAssignments[this.sourceKey] = { shifts: [] };
+            }
+            const sourceDay = scheduleAssignments[this.sourceKey];
             const originalAssignment = { ...this.assignment, assignmentId: dragDetails.assignmentId };
             sourceDay.shifts.push(originalAssignment);
             dirtyKeys.push(this.sourceKey);
         }
-        // FIX: Pass all modified document IDs to the save function.
         saveScheduleAssignments(dirtyKeys);
         renderWeeklySchedule();
     };

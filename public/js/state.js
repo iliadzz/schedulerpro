@@ -1,5 +1,7 @@
 // js/state.js
 
+import { markDirtyKey, markDirtyAssignment } from './firebase/firestore.js';
+
 const debounce = (func, wait = 400) => {
     let timeout;
     return function(...args) {
@@ -26,30 +28,48 @@ export function setCurrentUser(user) {
 }
 
 // --- Save Functions ---
-export function saveDepartments() {
+export const saveDepartments = debounce(() => {
     departments.forEach((dept, index) => {
         dept.sortOrder = index;
     });
     localStorage.setItem('departments', JSON.stringify(departments));
-};
+    markDirtyKey('departments');
+});
 
-const _saveRoles = () => localStorage.setItem('roles', JSON.stringify(roles));
-export const saveRoles = debounce(_saveRoles, 500);
+export const saveRoles = debounce(() => {
+    localStorage.setItem('roles', JSON.stringify(roles));
+    markDirtyKey('roles');
+}, 500);
 
-const _saveUsers = () => localStorage.setItem('users', JSON.stringify(users));
-export const saveUsers = debounce(_saveUsers, 500);
+export const saveUsers = debounce(() => {
+    localStorage.setItem('users', JSON.stringify(users));
+    markDirtyKey('users');
+}, 500);
 
-const _saveShiftTemplates = () => localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates));
-export const saveShiftTemplates = debounce(_saveShiftTemplates, 500);
+export const saveShiftTemplates = debounce(() => {
+    localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates));
+    markDirtyKey('shiftTemplates');
+}, 500);
 
-const _saveScheduleAssignments = () => localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
-export const saveScheduleAssignments = debounce(_saveScheduleAssignments, 500);
+export const saveScheduleAssignments = debounce((updatedDocIds = []) => {
+    localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
+    if (Array.isArray(updatedDocIds) && updatedDocIds.length) {
+        updatedDocIds.forEach(id => markDirtyAssignment(id));
+    } else {
+        // Fallback for safety, though passing IDs is preferred
+        markDirtyKey('scheduleAssignments');
+    }
+}, 500);
 
-const _saveEvents = () => localStorage.setItem('events', JSON.stringify(events));
-export const saveEvents = debounce(_saveEvents, 500);
+export const saveEvents = debounce(() => {
+    localStorage.setItem('events', JSON.stringify(events));
+    markDirtyKey('events');
+}, 500);
 
-const _saveRestaurantSettings = () => localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings));
-export const saveRestaurantSettings = debounce(_saveRestaurantSettings, 500);
+export const saveRestaurantSettings = debounce(() => {
+    localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings));
+    markDirtyKey('restaurantSettings');
+}, 500);
 
 
 export function saveCurrentViewDate() {
