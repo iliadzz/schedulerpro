@@ -1442,3 +1442,16 @@ ul li .item-actions button {
     /* This adds the indentation to the employee names below the header. */
     padding-left: 15px;
 }
+
+/* ADD THIS CSS FOR THE COUNTER */
+#firestore-write-counter {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    z-index: 1000;
+}

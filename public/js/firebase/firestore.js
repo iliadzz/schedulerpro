@@ -21,6 +21,17 @@ import { initSettingsTab } from '../ui/settings.js';
 const originalSetItem = window.localStorage.setItem.bind(window.localStorage);
 let activeListeners = [];
 
+// --- NEW: Client-side write counter ---
+let writeCounter = 0;
+function incrementWriteCounter(count = 1) {
+    writeCounter += count;
+    const counterElement = document.getElementById('firestore-write-counter');
+    if (counterElement) {
+        counterElement.textContent = `Writes: ${writeCounter}`;
+    }
+}
+
+
 // --- CHANGE: New helper function to prevent redundant localStorage writes ---
 /**
  * Safely sets an item in localStorage, but only if the new value is different from the existing value.
@@ -51,9 +62,12 @@ async function syncCollectionToFirestore(collectionName, localData) {
     const firestoreIds = new Set(snapshot.docs.map(doc => doc.id));
     const localIds = new Set(localData.map(item => String(item.id)));
 
+    let writeOperations = 0;
+
     firestoreIds.forEach(id => {
         if (!localIds.has(id)) {
             batch.delete(collectionRef.doc(id));
+            writeOperations++;
         }
     });
 
@@ -61,9 +75,13 @@ async function syncCollectionToFirestore(collectionName, localData) {
         const docId = String(item.id);
         const docRef = collectionRef.doc(docId);
         batch.set(docRef, item);
+        writeOperations++;
     });
 
-    await batch.commit();
+    if (writeOperations > 0) {
+        incrementWriteCounter(writeOperations); // Increment counter for the batch
+        await batch.commit();
+    }
 }
 
 
@@ -83,13 +101,19 @@ export function initializeSync() {
             const data = JSON.parse(value);
 
             if (key === 'restaurantSettings') {
+                incrementWriteCounter(); // Count this write
                 window.db.collection('settings').doc('main').set(data || {}, { merge: true });
             } else if (key === 'scheduleAssignments' && data && typeof data === 'object') {
                 const batch = window.db.batch();
+                let batchSize = 0;
                 Object.keys(data).forEach(docId => {
                     batch.set(window.db.collection('scheduleAssignments').doc(docId), data[docId] || {});
+                    batchSize++;
                 });
-                batch.commit();
+                if (batchSize > 0) {
+                    incrementWriteCounter(batchSize); // Count writes in batch
+                    batch.commit();
+                }
             } else if (Array.isArray(data)) {
                 syncCollectionToFirestore(key, data);
             }
@@ -126,7 +150,6 @@ export function initializeDataListeners() {
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             departments.length = 0;
             Array.prototype.push.apply(departments, updatedData);
-            // --- CHANGE: Use safeSetLocal to avoid unnecessary writes and UI thrash ---
             safeSetLocal('departments', departments);
             renderAll();
         })
