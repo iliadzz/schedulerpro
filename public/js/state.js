@@ -28,17 +28,15 @@ export function setCurrentUser(user) {
 // --- Save Functions ---
 
 // --- THIS IS THE FIX ---
-// Before saving, we now loop through the departments array and explicitly assign
-// a 'sortOrder' property based on the item's current index in the array.
-// This ensures that the user's custom drag-and-drop order is persisted.
-const _saveDepartments = () => {
+// The debounce has been removed from saveDepartments. Drag-and-drop operations are
+// singular user actions that don't repeat rapidly, so debouncing is not needed
+// and was causing a race condition with the UI re-render.
+export function saveDepartments() {
     departments.forEach((dept, index) => {
         dept.sortOrder = index;
     });
     localStorage.setItem('departments', JSON.stringify(departments));
 };
-export const saveDepartments = debounce(_saveDepartments, 500);
-
 
 const _saveRoles = () => localStorage.setItem('roles', JSON.stringify(roles));
 export const saveRoles = debounce(_saveRoles, 500);
