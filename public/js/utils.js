@@ -9,17 +9,36 @@ export function formatDate(date) {
     return date.toISOString().split('T')[0];
 }
 
-export function getWeekRange(date) {
+/**
+ * Calculates the start and end dates of a week based on a given date and a specified start day.
+ * @param {Date} date - The date to get the week range for.
+ * @param {string} [startDay='mon'] - The day the week starts on ('sun' or 'mon').
+ * @returns {{start: Date, end: Date}} An object containing the start and end dates of the week.
+ */
+export function getWeekRange(date, startDay = 'mon') {
     const d = new Date(date);
-    let weekStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const dayOfWeek = d.getDay();
-    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    weekStart.setDate(weekStart.getDate() + diff);
+    d.setHours(0, 0, 0, 0); // Normalize to the start of the day
 
-    let weekEnd = new Date(weekStart);
+    const dayOfWeek = d.getDay(); // Sunday is 0, Monday is 1, etc.
+
+    let diff;
+    if (startDay === 'mon') {
+        // If today is Sunday (0), we need to go back 6 days. Otherwise, go back (dayOfWeek - 1) days.
+        diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    } else { // 'sun'
+        // If today is Sunday (0), diff is 0. If Monday (1), go back 1 day, etc.
+        diff = -dayOfWeek;
+    }
+
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() + diff);
+
+    const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
+
     return { start: weekStart, end: weekEnd };
 }
+
 
 export function getDatesOfWeek(startDate) {
     const dates = [];
