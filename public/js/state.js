@@ -2,15 +2,6 @@
 
 import { markDirtyKey, markDirtyAssignment } from './firebase/firestore.js';
 
-const debounce = (func, wait = 400) => {
-    let timeout;
-    return function(...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), wait);
-    };
-};
-
 // --- Core Data Collections ---
 export let departments = JSON.parse(localStorage.getItem('departments')) || [];
 export let roles = JSON.parse(localStorage.getItem('roles')) || [];
@@ -27,50 +18,87 @@ export function setCurrentUser(user) {
     currentUser = user;
 }
 
-// --- Save Functions ---
-export const saveDepartments = debounce(() => {
+// --- Debounced localStorage Persistence ---
+
+// This is a helper function that creates a debounced version of a function.
+const debounce = (func, wait = 400) => {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+};
+
+// We create debounced functions specifically for writing to localStorage.
+// This prevents the application from writing to the disk too frequently, which can be slow.
+const persistDepartments = debounce(() => localStorage.setItem('departments', JSON.stringify(departments)), 500);
+const persistRoles = debounce(() => localStorage.setItem('roles', JSON.stringify(roles)), 500);
+const persistUsers = debounce(() => localStorage.setItem('users', JSON.stringify(users)), 500);
+const persistShiftTemplates = debounce(() => localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates)), 500);
+const persistScheduleAssignments = debounce(() => localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments)), 300);
+const persistEvents = debounce(() => localStorage.setItem('events', JSON.stringify(events)), 500);
+const persistRestaurantSettings = debounce(() => localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings)), 500);
+
+
+// --- Public Save Functions ---
+
+// These functions are called from other parts of the app.
+// They now do two things:
+// 1. Immediately mark the data as "dirty" for Firestore synchronization.
+// 2. Call the debounced function to save the data to localStorage.
+
+export function saveDepartments() {
     departments.forEach((dept, index) => {
         dept.sortOrder = index;
     });
-    localStorage.setItem('departments', JSON.stringify(departments));
     markDirtyKey('departments');
-});
+    persistDepartments();
+};
 
-export const saveRoles = debounce(() => {
-    localStorage.setItem('roles', JSON.stringify(roles));
+export function saveRoles() {
     markDirtyKey('roles');
-}, 500);
+    persistRoles();
+}
 
-export const saveUsers = debounce(() => {
-    localStorage.setItem('users', JSON.stringify(users));
+export function saveUsers() {
     markDirtyKey('users');
-}, 500);
+    persistUsers();
+}
 
-export const saveShiftTemplates = debounce(() => {
-    localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates));
+export function saveShiftTemplates() {
     markDirtyKey('shiftTemplates');
-}, 500);
+    persistShiftTemplates();
+}
 
-export const saveScheduleAssignments = debounce((updatedDocIds = []) => {
-    localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
-    if (Array.isArray(updatedDocIds) && updatedDocIds.length) {
-        updatedDocIds.forEach(id => markDirtyAssignment(id));
-    } else {
-        // Fallback for safety, though passing IDs is preferred
-        markDirtyKey('scheduleAssignments');
-    }
-}, 500);
+/**
+ * Saves schedule assignments. This is the key function that was fixed.
+ * It now immediately marks individual document IDs as dirty for Firestore,
+ * ensuring that no updates are lost during rapid operations like clearing a week.
+ * @param {string[]} [updatedDocIds=[]] - An array of specific document IDs that have changed.
+ */
+export function saveScheduleAssignments(updatedDocIds = []) {
+  // Mark Firestore dirty IMMEDIATELY so we don’t lose IDs across rapid calls.
+  if (Array.isArray(updatedDocIds) && updatedDocIds.length) {
+    updatedDocIds.forEach(id => markDirtyAssignment(id));
+  } else {
+    // Fallback if a caller forgets to pass IDs.
+    markDirtyKey('scheduleAssignments');
+  }
+  
+  // Persist the entire schedule to localStorage (this action is debounced).
+  persistScheduleAssignments();
+}
 
-export const saveEvents = debounce(() => {
-    localStorage.setItem('events', JSON.stringify(events));
+export function saveEvents() {
     markDirtyKey('events');
-}, 500);
+    persistEvents();
+}
 
-export const saveRestaurantSettings = debounce(() => {
-    localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings));
+export function saveRestaurantSettings() {
     markDirtyKey('restaurantSettings');
-}, 500);
-
+    persistRestaurantSettings();
+}
 
 export function saveCurrentViewDate() {
     localStorage.setItem('schedulerCurrentViewDate', currentViewDate.toISOString());
