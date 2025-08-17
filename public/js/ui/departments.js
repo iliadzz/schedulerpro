@@ -156,10 +156,9 @@ export function renderDepartments() {
     dom.departmentListUl.innerHTML = '';
     
     // --- THIS IS THE FIX ---
-    // Sort the departments array based on the 'sortOrder' property before rendering.
-    // The || 999 ensures that any departments without an order (like newly created ones
-    // before a save) appear at the end.
-    departments.sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
+    // The nullish coalescing operator '??' correctly handles a sortOrder of 0,
+    // whereas the old '||' operator incorrectly treated 0 as a missing value.
+    departments.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
 
 
     const selectDeptHTML = `<option value="" disabled data-lang-key="optSelectDept">${getTranslatedString('optSelectDept')}</option>`;
