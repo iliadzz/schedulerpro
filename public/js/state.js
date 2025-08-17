@@ -1,13 +1,5 @@
 // js/state.js
 
-// --- CHANGE: A helper function to delay execution, preventing rapid-fire saves ---
-/**
- * Creates a debounced function that delays invoking the original function until after
- * `wait` milliseconds have elapsed since the last time the debounced function was invoked.
- * @param {Function} func The function to debounce.
- * @param {number} wait The number of milliseconds to delay.
- * @returns {Function} Returns the new debounced function.
- */
 const debounce = (func, wait = 400) => {
     let timeout;
     return function(...args) {
@@ -34,12 +26,19 @@ export function setCurrentUser(user) {
 }
 
 // --- Save Functions ---
-// --- CHANGE: Each save function is now debounced. ---
-// This prevents a "write storm" to Firestore when multiple changes happen in quick succession.
-// For example, clicking multiple day pills on a shift template will now result in only ONE write operation.
 
-const _saveDepartments = () => localStorage.setItem('departments', JSON.stringify(departments));
+// --- THIS IS THE FIX ---
+// Before saving, we now loop through the departments array and explicitly assign
+// a 'sortOrder' property based on the item's current index in the array.
+// This ensures that the user's custom drag-and-drop order is persisted.
+const _saveDepartments = () => {
+    departments.forEach((dept, index) => {
+        dept.sortOrder = index;
+    });
+    localStorage.setItem('departments', JSON.stringify(departments));
+};
 export const saveDepartments = debounce(_saveDepartments, 500);
+
 
 const _saveRoles = () => localStorage.setItem('roles', JSON.stringify(roles));
 export const saveRoles = debounce(_saveRoles, 500);
