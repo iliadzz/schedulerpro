@@ -11,6 +11,14 @@ import { isEventOnDate } from './events.js';
 import { sortKeyForEmployee, addEmployeeDragAndDropHandlers } from '../features/employee-dnd.js';
 import * as ShiftDnd from '../features/shift-dnd.js';
 import { calculateAndRenderCoverage } from '../features/coverage-calculator.js';
+import {
+    clearWeekConfirmModal,
+    clearWeekConfirmText,
+    clearShiftsOnlyBtn,
+    clearAllAssignmentsBtn,
+    clearCancelBtn
+} from '../dom.js';
+
 
 function handleVacationClick(event) {
     if (currentUser.role === 'User') return;
@@ -144,7 +152,73 @@ export function executeCopyWeek() {
 
 
 export function handleClearWeek() {
-    alert("Clear week logic needs to be fully wired up here.");
+    if (!clearWeekConfirmModal) return;
+
+    // Dynamically generate the confirmation text to be specific.
+    const week = getWeekRange(currentViewDate);
+    const weekStartStr = formatDate(week.start);
+    const weekEndStr = formatDate(week.end);
+    if (clearWeekConfirmText) {
+        clearWeekConfirmText.textContent = `Are you sure you want to clear assignments for the week of ${weekStartStr} to ${weekEndStr}? This action can be undone.`;
+    }
+
+    clearWeekConfirmModal.style.display = 'block';
+}
+
+/**
+ * Wires up the event listeners for the 'Clear Week' confirmation modal buttons.
+ * This will be called once from main.js when the application starts.
+ */
+export function initClearWeekModalListeners() {
+    if (!clearWeekConfirmModal) return;
+
+    const performClearAction = (filter) => {
+        const weekDates = getDatesOfWeek(getWeekRange(currentViewDate).start);
+        const visibleUsers = users.filter(user => user.isVisible !== false);
+
+        visibleUsers.forEach(user => {
+            weekDates.forEach(date => {
+                const dateStr = formatDate(date);
+                const dayData = scheduleAssignments[`${user.id}-${dateStr}`];
+
+                if (dayData && dayData.shifts) {
+                    // Create a copy of shifts to iterate over, as the original will be modified
+                    [...dayData.shifts].forEach(assignment => {
+                        let shouldDelete = false;
+                        switch (filter) {
+                            case 'all':
+                                shouldDelete = true;
+                                break;
+                            case 'shifts_only':
+                                shouldDelete = assignment.type === 'shift';
+                                break;
+                            case 'keep_vacation':
+                                shouldDelete = !(assignment.type === 'time_off' && assignment.reason === 'Vacation');
+                                break;
+                        }
+
+                        if (shouldDelete) {
+                            // Use the existing, undoable delete function
+                            deleteAssignedShift(user.id, dateStr, assignment.assignmentId);
+                        }
+                    });
+                }
+            });
+        });
+        clearWeekConfirmModal.style.display = 'none';
+    };
+
+    if (clearShiftsOnlyBtn) {
+        clearShiftsOnlyBtn.addEventListener('click', () => performClearAction('shifts_only'));
+    }
+    if (clearAllAssignmentsBtn) {
+        clearAllAssignmentsBtn.addEventListener('click', () => performClearAction('all'));
+    }
+    if (clearCancelBtn) {
+        clearCancelBtn.addEventListener('click', () => {
+            clearWeekConfirmModal.style.display = 'none';
+        });
+    }
 }
 
 export function renderWeeklySchedule() {
