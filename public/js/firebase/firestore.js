@@ -1,6 +1,6 @@
 // js/firebase/firestore.js
 
-// 1. Import dependencies
+// 1. Import Dependencies
 import {
     departments,
     roles,
@@ -19,8 +19,26 @@ import { initSettingsTab } from '../ui/settings.js';
 
 // --- Module-level variables ---
 const originalSetItem = window.localStorage.setItem.bind(window.localStorage);
-// --- CHANGE: Array to hold all the unsubscribe functions from our listeners ---
 let activeListeners = [];
+
+// --- CHANGE: New helper function to prevent redundant localStorage writes ---
+/**
+ * Safely sets an item in localStorage, but only if the new value is different from the existing value.
+ * This prevents unnecessary UI re-renders triggered by identical data updates from Firestore.
+ * @param {string} key The localStorage key.
+ * @param {object} valueObj The JavaScript object to store.
+ */
+function safeSetLocal(key, valueObj) {
+  const nextValue = JSON.stringify(valueObj ?? {});
+  const previousValue = localStorage.getItem(key);
+  if (previousValue === nextValue) {
+      // If the data hasn't changed, do nothing.
+      return;
+  }
+  // Otherwise, update localStorage.
+  originalSetItem(key, nextValue);
+}
+
 
 // --- Private Helper Function ---
 async function syncCollectionToFirestore(collectionName, localData) {
@@ -81,23 +99,14 @@ export function initializeSync() {
     };
 }
 
-/**
- * --- NEW FUNCTION ---
- * Detaches all active Firestore listeners. This is called on logout or tab close.
- */
 export function cleanupDataListeners() {
     console.log(`Cleaning up ${activeListeners.length} Firestore listeners.`);
     activeListeners.forEach(unsubscribe => unsubscribe());
-    activeListeners = []; // Clear the array
+    activeListeners = [];
 }
 
-/**
- * Sets up real-time listeners on all Firestore collections.
- * --- CHANGE: Now prevents re-attaching listeners and adds them to a managed array. ---
- */
 export function initializeDataListeners() {
     if (!window.db || activeListeners.length > 0) {
-        // Prevent re-attaching if listeners are already active
         return;
     }
 
@@ -110,16 +119,15 @@ export function initializeDataListeners() {
         renderWeeklySchedule();
     };
 
-    // --- CHANGE: Each listener is now pushed to the activeListeners array for cleanup. ---
-    // --- Also, each listener now has the 'hasPendingWrites' guard. ---
     activeListeners.push(
         window.db.collection('departments').onSnapshot(snapshot => {
-            if (snapshot.metadata.hasPendingWrites) return; // Prevent feedback loop
+            if (snapshot.metadata.hasPendingWrites) return;
             console.log("Firestore: Departments updated.");
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             departments.length = 0;
             Array.prototype.push.apply(departments, updatedData);
-            originalSetItem('departments', JSON.stringify(departments));
+            // --- CHANGE: Use safeSetLocal to avoid unnecessary writes and UI thrash ---
+            safeSetLocal('departments', departments);
             renderAll();
         })
     );
@@ -131,7 +139,7 @@ export function initializeDataListeners() {
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             roles.length = 0;
             Array.prototype.push.apply(roles, updatedData);
-            originalSetItem('roles', JSON.stringify(roles));
+            safeSetLocal('roles', roles);
             renderAll();
         })
     );
@@ -143,7 +151,7 @@ export function initializeDataListeners() {
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             users.length = 0;
             Array.prototype.push.apply(users, updatedData);
-            originalSetItem('users', JSON.stringify(users));
+            safeSetLocal('users', users);
             renderAll();
         })
     );
@@ -155,7 +163,7 @@ export function initializeDataListeners() {
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             shiftTemplates.length = 0;
             Array.prototype.push.apply(shiftTemplates, updatedData);
-            originalSetItem('shiftTemplates', JSON.stringify(shiftTemplates));
+            safeSetLocal('shiftTemplates', shiftTemplates);
             renderAll();
         })
     );
@@ -167,7 +175,7 @@ export function initializeDataListeners() {
             const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             events.length = 0;
             Array.prototype.push.apply(events, updatedData);
-            originalSetItem('events', JSON.stringify(events));
+            safeSetLocal('events', events);
             renderWeeklySchedule();
         })
     );
@@ -178,7 +186,7 @@ export function initializeDataListeners() {
             console.log("Firestore: Schedule updated.");
             Object.keys(scheduleAssignments).forEach(key => delete scheduleAssignments[key]);
             snapshot.forEach(doc => { scheduleAssignments[doc.id] = doc.data() });
-            originalSetItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
+            safeSetLocal('scheduleAssignments', scheduleAssignments);
             renderWeeklySchedule();
         })
     );
@@ -190,7 +198,7 @@ export function initializeDataListeners() {
             const newSettings = doc.exists ? doc.data() : {};
             Object.keys(restaurantSettings).forEach(key => delete restaurantSettings[key]);
             Object.assign(restaurantSettings, newSettings);
-            originalSetItem('restaurantSettings', JSON.stringify(restaurantSettings));
+            safeSetLocal('restaurantSettings', restaurantSettings);
             initSettingsTab();
             renderWeeklySchedule();
         })
