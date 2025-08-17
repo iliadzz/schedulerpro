@@ -630,6 +630,26 @@
         </main>
     </div>
     
-    <script type="module" src="js/main.js?v=1.0.69"></script>
+    <div id="time-picker-modal" class="modal">
+        <div class="modal-content">
+            <h3 data-lang-key="modalSelectTimeTitle">Select Time</h3>
+            <div class="time-picker-container">
+                <div class="time-picker-section">
+                    <h4>Hour</h4>
+                    <div id="time-picker-hours" class="time-picker-grid"></div>
+                </div>
+                <div class="time-picker-section">
+                    <h4>Minute</h4>
+                    <div id="time-picker-minutes" class="time-picker-grid time-picker-minutes-grid"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="time-picker-save-btn" data-lang-key="btnSaveChanges">Save</button>
+                <button id="time-picker-cancel-btn" class="secondary-btn" data-lang-key="btnCancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js?v=1.0.70"></script>
 </body>
 </html>
