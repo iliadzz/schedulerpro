@@ -88,7 +88,6 @@ export function handleCopyWeek() {
     }
 }
 
-// --- FIX: Implement the actual copy logic ---
 export function executeCopyWeek() {
     const sourceDateInput = document.getElementById('copy-week-source-date');
     if (!sourceDateInput.value) {
@@ -180,28 +179,63 @@ export function renderWeeklySchedule() {
         (selectedDepartmentIds.includes('all') || selectedDepartmentIds.includes(user.departmentId))
     );
 
-    // Filter for Manager role
     if (currentUser && currentUser.role === 'Manager') {
         const managerDepts = currentUser.managedDepartmentIds || [];
         visibleUsers = visibleUsers.filter(user => managerDepts.includes(user.departmentId));
     }
 
-
+    // --- CHANGE: Sort by Department first, then by the existing sort order. ---
     visibleUsers.sort((a, b) => {
-      const ak = sortKeyForEmployee(a);
-      const bk = sortKeyForEmployee(b);
-      if (ak !== bk) return ak - bk;
-      return (a.displayName || '').localeCompare(b.displayName || '') || a.id.localeCompare(b.id);
+        const deptA = departments.find(d => d.id === a.departmentId)?.name || 'ZZZ'; // Unassigned last
+        const deptB = departments.find(d => d.id === b.departmentId)?.name || 'ZZZ';
+        if (deptA.localeCompare(deptB) !== 0) {
+            return deptA.localeCompare(deptB);
+        }
+        const ak = sortKeyForEmployee(a);
+        const bk = sortKeyForEmployee(b);
+        if (ak !== bk) return ak - bk;
+        return (a.displayName || '').localeCompare(b.displayName || '') || a.id.localeCompare(b.id);
     });
+
 
     calculateAndRenderCoverage(visibleUsers, weekDates, selectedDepartmentIds);
 
     const canEditSchedule = currentUser && currentUser.role !== 'User';
+    
+    // --- CHANGE: Logic to track the current department and insert headers ---
+    let lastDepartmentId = null;
 
     visibleUsers.forEach(user => {
+        // Check if the department has changed from the previous user.
+        if (user.departmentId !== lastDepartmentId) {
+            const dept = departments.find(d => d.id === user.departmentId);
+            const deptName = dept ? dept.name : getTranslatedString('optNoDept');
+            
+            // Create the department header row.
+            const headerRow = document.createElement('div');
+            headerRow.className = 'department-header-row';
+            headerRow.textContent = deptName;
+            dom.scheduleGridBody.appendChild(headerRow);
+
+            // Create empty cells to align with the grid columns.
+            for (let i = 0; i < 7; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'department-header-row';
+                 // Ensure event highlighting continues through this row
+                const dateObj = weekDates[i];
+                if(isEventOnDate(dateObj).length > 0) {
+                    emptyCell.classList.add('is-event-day');
+                }
+                dom.scheduleGridBody.appendChild(emptyCell);
+            }
+            lastDepartmentId = user.departmentId;
+        }
+
+
         let weeklyHours = 0;
         const userRowLabel = document.createElement('div');
-        userRowLabel.className = 'employee-row-label';
+        // --- CHANGE: Add 'indented' class for styling ---
+        userRowLabel.className = 'employee-row-label indented';
         if (canEditSchedule) {
             userRowLabel.classList.add('draggable-employee-row');
             userRowLabel.draggable = true;
