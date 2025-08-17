@@ -1,6 +1,7 @@
 // js/ui/scheduler.js
 
-import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments, departments } from '../state.js';
+// --- CHANGE: Import the new employeeDisplayFormat state variable ---
+import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments, departments, employeeDisplayFormat } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { formatDate, getWeekRange, getDatesOfWeek, formatTimeForDisplay, calculateShiftDuration, getContrastColor, generateId } from '../utils.js';
@@ -31,8 +32,6 @@ function handleVacationClick(event) {
 function deleteAssignedShift(userId, dateStr, assignmentId) {
     const command = new DeleteAssignmentCommand(userId, dateStr, assignmentId);
     HistoryManager.doAction(command);
-    // --- THIS IS THE FIX ---
-    // After a delete action, the schedule must be re-rendered to show the change.
     renderWeeklySchedule();
 }
 
@@ -121,7 +120,6 @@ export function executeCopyWeek() {
                 const targetKey = `${user.id}-${targetDateStr}`;
 
                 if (scheduleAssignments[sourceKey] && scheduleAssignments[sourceKey].shifts) {
-                    // Clear existing shifts for the target day before copying new ones
                     if (scheduleAssignments[targetKey] && scheduleAssignments[targetKey].shifts) {
                         scheduleAssignments[targetKey].shifts = [];
                     }
@@ -207,7 +205,14 @@ export function renderWeeklySchedule() {
         const bk = sortKeyForEmployee(b);
         if (ak !== bk) return ak - bk;
         
-        return (a.displayName || '').localeCompare(b.displayName || '') || a.id.localeCompare(b.id);
+        // --- CHANGE: The final fallback sort now respects the selected display format ---
+        if (employeeDisplayFormat === 'LF') {
+            return (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || '');
+        }
+        if (employeeDisplayFormat === 'FL') {
+            return (a.firstName || '').localeCompare(b.firstName || '') || (a.lastName || '').localeCompare(b.lastName || '');
+        }
+        return (a.displayName || '').localeCompare(b.displayName || '');
     });
 
 
@@ -241,6 +246,20 @@ export function renderWeeklySchedule() {
         }
 
         userRowLabel.dataset.employeeId = user.id;
+        
+        // --- CHANGE: Determine the employee name to display based on the global format setting ---
+        let employeeNameToDisplay;
+        switch (employeeDisplayFormat) {
+            case 'LF':
+                employeeNameToDisplay = `${user.lastName || ''}, ${user.firstName || ''}`;
+                break;
+            case 'FL':
+                employeeNameToDisplay = `${user.firstName || ''} ${user.lastName || ''}`;
+                break;
+            default:
+                employeeNameToDisplay = user.displayName || `${user.firstName} ${user.lastName}`;
+        }
+
 
         const actionsHTML = canEditSchedule ? `
             <div class="employee-actions">
@@ -250,7 +269,7 @@ export function renderWeeklySchedule() {
 
         userRowLabel.innerHTML = `
             <div class="employee-name-hours">
-                <span class="employee-name">${user.displayName}</span>
+                <span class="employee-name">${employeeNameToDisplay.trim()}</span>
                 <span class="employee-stats">
                     <span class="total-hours" title="Hours this week"><i class="fas fa-clock"></i> <span id="hours-${user.id}">0</span>h</span>
                     <span class="vacation-counter" title="Click to edit vacation days" data-user-id="${user.id}"><i class="fas fa-plane-departure"></i> ${user.vacationBalance}</span>
@@ -337,14 +356,10 @@ export function renderWeeklySchedule() {
                 }
 
                 if (canEditSchedule) {
-                    // --- THIS IS THE FIX ---
-                    // The event listener for the delete button is now correctly placed.
-                    // It also includes e.stopPropagation() to prevent the click from
-                    // triggering the edit modal on the parent element.
                     const deleteBtn = itemDiv.querySelector('.delete-assigned-shift-btn');
                     if (deleteBtn) {
                         deleteBtn.addEventListener('click', (e) => {
-                            e.stopPropagation(); // Stop the click from bubbling up to the shift item
+                            e.stopPropagation(); 
                             deleteAssignedShift(user.id, dateStr, assignment.assignmentId);
                         });
                     }

@@ -8,17 +8,24 @@ import {
     DEFAULT_VACATION_DAYS,
     saveUsers,
     saveScheduleAssignments,
-    currentUser
+    currentUser,
+    // --- CHANGE: Import the new state variable and save function ---
+    employeeDisplayFormat,
+    saveEmployeeDisplayFormat
 } from '../state.js';
 
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { createItemActionButtons, generateId } from '../utils.js';
+// --- CHANGE: Import scheduler render function to trigger updates ---
+import { renderWeeklySchedule } from './scheduler.js';
+
 
 // --- Module-level state for filters ---
 let selectedDeptIds = ['all'];
 let showInactive = false;
-let displayFormat = 'LF'; // Default to Last Name, First Name
+// --- CHANGE: The local displayFormat variable is no longer needed ---
+// let displayFormat = 'LF'; 
 
 function renderEmployeeFilters() {
     const container = document.getElementById('employee-filter-pills');
@@ -26,7 +33,6 @@ function renderEmployeeFilters() {
 
     container.innerHTML = '';
 
-    // "All" Pill
     const allPill = document.createElement('div');
     allPill.className = 'pill dept-pill';
     allPill.textContent = 'All';
@@ -41,7 +47,6 @@ function renderEmployeeFilters() {
     });
     container.appendChild(allPill);
 
-    // Department Pills
     departments.forEach(dept => {
         const pill = document.createElement('div');
         pill.className = 'pill dept-pill';
@@ -69,7 +74,6 @@ function renderEmployeeFilters() {
         container.appendChild(pill);
     });
     
-    // "Inactive" Pill
     const inactivePill = document.createElement('div');
     inactivePill.className = 'pill inactive-pill';
     inactivePill.textContent = 'INACTIVE';
@@ -104,12 +108,21 @@ function renderDisplayFormatPills() {
         pill.className = 'pill display-format-pill';
         pill.textContent = format.id;
         pill.title = format.text;
-        if (displayFormat === format.id) {
+        // --- CHANGE: Read from the central state variable ---
+        if (employeeDisplayFormat === format.id) {
             pill.classList.add('active');
         }
         pill.addEventListener('click', () => {
-            displayFormat = format.id;
-            renderEmployees();
+            // --- CHANGE: Update the central state, save it, and re-render both views ---
+            // This is a bit of a workaround to update the state variable directly.
+            // In a more complex app, we'd use a setter function.
+            let newFormat = format.id;
+            localStorage.setItem('employeeDisplayFormat', newFormat);
+            // Manually update the imported variable for the current session
+            // This is a simplified approach for this app's architecture.
+            // A more robust solution might involve a state management library.
+            // For now, we reload the module's view of the state.
+            location.reload(); // Simplest way to ensure all modules get the new state
         });
         container.appendChild(pill);
     });
@@ -168,7 +181,6 @@ export function populateEmployeeFormForEdit(user) {
     dom.employeeRoleSelect.value = user.role || 'User';
     dom.employeeRoleSelect.dispatchEvent(new Event('change'));
     
-    // Populate managed departments
     const checkboxes = dom.employeeManagedDepartmentsMultiselect.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(cb => {
         cb.checked = (user.managedDepartmentIds || []).includes(cb.value);
@@ -321,14 +333,12 @@ export function renderEmployees() {
     
     let employeesToDisplay = users;
 
-    // Filter by Manager's departments if applicable
     if (currentUser && currentUser.role === 'Manager') {
         const managerDepts = currentUser.managedDepartmentIds || [];
         employeesToDisplay = users.filter(user => managerDepts.includes(user.departmentId));
     } else if (showInactive) {
         employeesToDisplay = users.filter(user => user.status === 'Terminated');
     } else {
-        // Apply pill filters for General Manager (Active employees only)
         employeesToDisplay = users.filter(user => {
             const statusMatch = user.status === 'Active' || user.status === undefined;
             const deptMatch = selectedDeptIds.includes('all') || selectedDeptIds.includes(user.departmentId);
@@ -338,10 +348,11 @@ export function renderEmployees() {
 
 
     employeesToDisplay.sort((a, b) => {
-        if (displayFormat === 'LF') {
+        // --- CHANGE: Use the central state variable for sorting ---
+        if (employeeDisplayFormat === 'LF') {
             return (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || '');
         }
-        if (displayFormat === 'FL') {
+        if (employeeDisplayFormat === 'FL') {
             return (a.firstName || '').localeCompare(b.firstName || '') || (a.lastName || '').localeCompare(b.lastName || '');
         }
         return (a.displayName || '').localeCompare(b.displayName || '');
@@ -354,7 +365,8 @@ export function renderEmployees() {
         const deptAbbr = dept ? `[${dept.abbreviation}]` : '';
 
         let employeeName;
-        switch (displayFormat) {
+        // --- CHANGE: Use the central state variable for display ---
+        switch (employeeDisplayFormat) {
             case 'LF':
                 employeeName = `${user.lastName || ''}, ${user.firstName || ''}`;
                 break;

@@ -26,11 +26,6 @@ export function setCurrentUser(user) {
 }
 
 // --- Save Functions ---
-
-// --- THIS IS THE FIX ---
-// The debounce has been removed from saveDepartments. Drag-and-drop operations are
-// singular user actions that don't repeat rapidly, so debouncing is not needed
-// and was causing a race condition with the UI re-render.
 export function saveDepartments() {
     departments.forEach((dept, index) => {
         dept.sortOrder = index;
@@ -61,10 +56,18 @@ export function saveCurrentViewDate() {
     localStorage.setItem('schedulerCurrentViewDate', currentViewDate.toISOString());
 }
 
+// --- CHANGE: Added a function to save the chosen employee display format ---
+export function saveEmployeeDisplayFormat() {
+    localStorage.setItem('employeeDisplayFormat', employeeDisplayFormat);
+}
+
 
 // --- Application UI State ---
 const savedDate = localStorage.getItem('schedulerCurrentViewDate');
 export let currentViewDate = savedDate ? new Date(savedDate) : new Date();
+
+// --- CHANGE: The display format is now loaded from localStorage and exported ---
+export let employeeDisplayFormat = localStorage.getItem('employeeDisplayFormat') || 'LF'; // Default to 'Last, First'
 
 export let weekStartsOnMonday = true;
 export let selectedDepartmentIds = ['all'];
