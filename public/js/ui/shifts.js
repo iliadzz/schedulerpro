@@ -425,9 +425,6 @@ export function renderShiftTemplates() {
         }
         if (selectedDeptIds !== null) {
             filteredTemplates = shiftTemplates.filter(st => {
-                // --- FIX: This logic now correctly handles both string and array department IDs ---
-                // Normalize departmentId(s) to an array for consistent checking.
-                // This ensures templates created from custom shifts (with a single `departmentId`) are not missed.
                 const templateDepts = Array.isArray(st.departmentIds) ? st.departmentIds : (st.departmentId ? [st.departmentId] : []);
 
                 if (templateDepts.length === 0) {
@@ -517,12 +514,13 @@ export function renderShiftTemplates() {
                 pill.type = 'button';
                 pill.className = 'pill dept-pill';
                 pill.textContent = dept.abbreviation;
-                if ((st.departmentIds || []).includes(dept.id)) {
+                const templateDepts = Array.isArray(st.departmentIds) ? st.departmentIds : (st.departmentId ? [st.departmentId] : []);
+                if (templateDepts.includes(dept.id)) {
                     pill.classList.add('active');
                 }
                 pill.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const currentDepts = st.departmentIds || [];
+                    let currentDepts = Array.isArray(st.departmentIds) ? st.departmentIds : (st.departmentId ? [st.departmentId] : []);
                     const index = currentDepts.indexOf(dept.id);
                     if (index > -1) {
                         currentDepts.splice(index, 1);
