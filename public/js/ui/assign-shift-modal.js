@@ -43,7 +43,9 @@ function populateTemplatesForModal(filterDeptId) {
     dom.assignModalShiftTemplateSelect.innerHTML = `<option value="">--${getTranslatedString('optSelectShift') || 'Select Shift'}--</option>`;
     const relevantTemplates = shiftTemplates.filter(st => {
         if (!filterDeptId || filterDeptId === 'all') return true;
-        return st.departmentId === filterDeptId;
+        // Correctly handle both departmentId (string) and departmentIds (array)
+        const templateDepts = Array.isArray(st.departmentIds) ? st.departmentIds : (st.departmentId ? [st.departmentId] : []);
+        return templateDepts.includes(filterDeptId);
     });
 
     relevantTemplates.forEach(st => {
@@ -80,7 +82,11 @@ export function openModalForEdit(assignment, userId, dateStr) {
     } else if (assignment.shiftTemplateId) {
         const tpl = shiftTemplates.find(st => st.id === assignment.shiftTemplateId);
         if (tpl) {
-            shiftDeptId = tpl.departmentId;
+            // Handle both departmentId and departmentIds
+            const templateDepts = Array.isArray(tpl.departmentIds) ? tpl.departmentIds : (tpl.departmentId ? [tpl.departmentId] : []);
+            if (templateDepts.length > 0) {
+                shiftDeptId = templateDepts[0]; // Just take the first one for populating the dropdown
+            }
             startTime = tpl.start;
             endTime = tpl.end;
         }
@@ -187,7 +193,7 @@ export function handleAssignShift() {
             newAssignment.isCustom = true;
             newAssignment.customStart = formatTimeToHHMM(dom.customShiftStartHourSelect.value, dom.customShiftStartMinuteSelect.value);
             newAssignment.customEnd = formatTimeToHHMM(dom.customShiftEndHourSelect.value, dom.customShiftEndMinuteSelect.value);
-            
+
             if (dom.saveAsTemplateCheckbox.checked && dom.newTemplateNameInput.value.trim()) {
                 const newTemplate = {
                     id: generateId('shift'),

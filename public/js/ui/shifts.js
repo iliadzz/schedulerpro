@@ -306,7 +306,7 @@ function updateShiftDeptLabel() {
 export function populateShiftTemplateFormForEdit(template) {
     dom.editingShiftTemplateIdInput.value = template.id;
     dom.shiftTemplateNameInput.value = template.name;
-    
+
     dom.shiftTemplateStartTimeInput.value = template.start;
     dom.shiftTemplateStartTimePill.textContent = template.start;
     dom.shiftTemplateEndTimeInput.value = template.end;
@@ -314,7 +314,7 @@ export function populateShiftTemplateFormForEdit(template) {
 
     renderPills(dom.shiftFormDepartmentPills, departments, template.departmentIds || [], 'dept', 'abbreviation', 'active');
     renderPills(dom.shiftFormDayPills, daysOrder.map(d => ({id: d, name: dayNames[d]})), template.availableDays || [], 'day', 'name', 'active');
-    
+
     dom.addShiftTemplateBtn.textContent = 'Save Changes';
     dom.cancelEditShiftTemplateBtn.style.display = 'inline-block';
 }
@@ -325,7 +325,7 @@ export function populateShiftTemplateFormForEdit(template) {
 export function resetShiftTemplateForm() {
     dom.editingShiftTemplateIdInput.value = '';
     dom.shiftTemplateNameInput.value = '';
-    
+
     dom.shiftTemplateStartTimeInput.value = "09:00";
     dom.shiftTemplateStartTimePill.textContent = "09:00";
     dom.shiftTemplateEndTimeInput.value = "17:00";
@@ -401,11 +401,11 @@ export function handleSaveShiftTemplate() {
 export function renderShiftTemplates() {
     if (!dom.shiftTemplateContainer) return;
     dom.shiftTemplateContainer.innerHTML = '';
-    
+
     resetShiftTemplateForm(); // Initialize the form pills.
 
     const selectedDeptIds = getSelectedShiftDepartmentIds();
-    
+
     let filteredTemplates = shiftTemplates;
     const multiselectElement = document.getElementById('shift-dept-multiselect');
 
@@ -429,7 +429,7 @@ export function renderShiftTemplates() {
                 // Normalize departmentId(s) to an array for consistent checking.
                 // This ensures templates created from custom shifts (with a single `departmentId`) are not missed.
                 const templateDepts = Array.isArray(st.departmentIds) ? st.departmentIds : (st.departmentId ? [st.departmentId] : []);
-                
+
                 if (templateDepts.length === 0) {
                     return selectedDeptIds.includes('_unassigned');
                 }
@@ -441,7 +441,7 @@ export function renderShiftTemplates() {
 
     // Group templates by department for display.
     const groupedByDept = filteredTemplates.reduce((acc, template) => {
-        const deptIds = template.departmentIds || [];
+        const deptIds = Array.isArray(template.departmentIds) ? template.departmentIds : (template.departmentId ? [template.departmentId] : []);
         if (deptIds.length === 0) {
             if (!acc._unassigned) {
                 acc._unassigned = { name: 'Unassigned', templates: [] };
@@ -499,9 +499,9 @@ export function renderShiftTemplates() {
         deptGroup.templates.forEach(st => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'template-item';
-            
+
             const duration = calculateShiftDuration(st.start, st.end).toFixed(1);
-            
+
             const infoDiv = document.createElement('div');
             infoDiv.className = 'template-info';
             infoDiv.innerHTML = `
@@ -509,7 +509,7 @@ export function renderShiftTemplates() {
                 <span class="template-name-span">| ${st.name}</span>
                 <span class="template-duration">[${duration}]</span>
             `;
-            
+
             const deptPills = document.createElement('div');
             deptPills.className = 'department-pills-container';
             departments.forEach(dept => {
@@ -537,9 +537,9 @@ export function renderShiftTemplates() {
             });
 
             infoDiv.appendChild(deptPills);
-            
+
             infoDiv.appendChild(createItemActionButtons(
-                () => populateShiftTemplateFormForEdit(st), 
+                () => populateShiftTemplateFormForEdit(st),
                 () => deleteShiftTemplate(st.id)
             ));
             itemDiv.appendChild(infoDiv);
@@ -571,10 +571,10 @@ export function renderShiftTemplates() {
             });
 
             itemDiv.appendChild(dayPills);
-            
+
             deptColumn.appendChild(itemDiv);
         });
-        
+
         gridContainer.appendChild(deptColumn);
     });
 
