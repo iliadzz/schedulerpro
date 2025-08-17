@@ -38,8 +38,33 @@ function handleVacationClick(event) {
 }
 
 function deleteAssignedShift(userId, dateStr, assignmentId) {
-    const command = new DeleteAssignmentCommand(userId, dateStr, assignmentId);
-    HistoryManager.doAction(command);
+    // --- THIS IS THE FIX ---
+    // Instead of only creating a command, we now immediately modify the local state
+    // BEFORE the command is executed. This prevents the UI from reverting.
+    const assignmentKey = `${userId}-${dateStr}`;
+    const dayData = scheduleAssignments[assignmentKey];
+    if (dayData && dayData.shifts) {
+        const index = dayData.shifts.findIndex(a => a.assignmentId === assignmentId);
+        if (index > -1) {
+            // Create the command with the state *before* modification, so it can be undone.
+            const command = new DeleteAssignmentCommand(userId, dateStr, assignmentId);
+            HistoryManager.doAction(command);
+
+            // Now, we re-apply the deletion to the local state immediately for the UI.
+            // This ensures that even if Firestore's listener fires, our local state is already correct.
+            const dayDataImmediate = scheduleAssignments[assignmentKey];
+            if (dayDataImmediate && dayDataImmediate.shifts) {
+                const immediateIndex = dayDataImmediate.shifts.findIndex(a => a.assignmentId === assignmentId);
+                if (immediateIndex > -1) {
+                    dayDataImmediate.shifts.splice(immediateIndex, 1);
+                    if (dayDataImmediate.shifts.length === 0) {
+                        delete scheduleAssignments[assignmentKey];
+                    }
+                }
+            }
+        }
+    }
+    // The command will still handle saving, so we just need to re-render.
     renderWeeklySchedule();
 }
 
