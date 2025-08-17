@@ -7,7 +7,7 @@ import * as dom from './dom.js';
 import { setupAuthListeners } from './firebase/auth.js';
 // --- CHANGE: Import listener management functions from firestore.js ---
 import { initializeSync, initializeDataListeners, cleanupDataListeners } from './firebase/firestore.js';
-import { currentUser } from './state.js';
+import { currentUser, weekStartsOn } from './state.js'; // Import weekStartsOn
 
 import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, handleSaveDepartment } from './ui/departments.js';
 import { renderRoles, resetRoleForm, handleSaveRole, populateRoleColorPalette, ensureRoleDeptMultiselect, populateRoleDeptCheckboxes } from './ui/roles.js';
@@ -53,6 +53,17 @@ window.__startApp = function() {
 
     // Then initialize the sync mechanism that intercepts localStorage.setItem
     initializeSync();
+
+    // --- NEW: Initialize the custom date picker ---
+    const dayMap = { 'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6 };
+    const locale = {
+        firstDayOfWeek: dayMap[weekStartsOn()] || 1 // Get start day from state, default to Monday
+    };
+
+    // Attach flatpickr to our existing input elements
+    flatpickr(dom.weekPickerAlt, { locale: locale, dateFormat: "Y-m-d" });
+    flatpickr(document.getElementById('copy-week-source-date'), { locale: locale, dateFormat: "Y-m-d" });
+    // --- END NEW ---
 
     populateRoleColorPalette();
     populateTimeSelectsForElements(dom.customShiftStartHourSelect, dom.customShiftStartMinuteSelect);
