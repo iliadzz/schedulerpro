@@ -45,10 +45,12 @@ function populateDepartmentFilter() {
     if (!container) return;
 
     container.innerHTML = '';
+    const currentFilter = window.selectedDepartmentIds || ['all'];
 
     // "All" Pill
     const allPill = document.createElement('div');
-    allPill.className = 'pill dept-pill active';
+    allPill.className = 'pill dept-pill';
+    if (currentFilter.includes('all')) allPill.classList.add('active');
     allPill.textContent = 'All';
     allPill.dataset.id = 'all';
     allPill.addEventListener('click', () => handleDepartmentFilterChange('all'));
@@ -58,6 +60,7 @@ function populateDepartmentFilter() {
     departments.forEach(dept => {
         const pill = document.createElement('div');
         pill.className = 'pill dept-pill';
+        if (currentFilter.includes(dept.id)) pill.classList.add('active');
         pill.textContent = dept.abbreviation;
         pill.dataset.id = dept.id;
         pill.addEventListener('click', () => handleDepartmentFilterChange(dept.id));
@@ -65,20 +68,34 @@ function populateDepartmentFilter() {
     });
 }
 
+
 function handleDepartmentFilterChange(selectedId) {
-    const pills = document.querySelectorAll('#scheduler-department-filter-pills .pill');
-    pills.forEach(pill => {
-        if (pill.dataset.id === selectedId) {
-            pill.classList.add('active');
-        } else {
-            pill.classList.remove('active');
+    let currentFilter = window.selectedDepartmentIds || ['all'];
+
+    if (selectedId === 'all') {
+        currentFilter = ['all'];
+    } else {
+        // If 'all' is currently selected, start a new selection.
+        if (currentFilter.includes('all')) {
+            currentFilter = [];
         }
-    });
+        const index = currentFilter.indexOf(selectedId);
+        if (index > -1) {
+            // Remove from selection
+            currentFilter.splice(index, 1);
+        } else {
+            // Add to selection
+            currentFilter.push(selectedId);
+        }
+        // If nothing is selected, default back to 'all'.
+        if (currentFilter.length === 0) {
+            currentFilter = ['all'];
+        }
+    }
 
-    // --- FIX: Save the selected filter to localStorage ---
-    localStorage.setItem('schedulerDepartmentFilter', selectedId);
-
-    window.selectedDepartmentIds = [selectedId];
+    window.selectedDepartmentIds = currentFilter;
+    localStorage.setItem('schedulerDepartmentFilter', JSON.stringify(currentFilter)); // Save array
+    populateDepartmentFilter(); // Re-render pills to show correct active states
     renderWeeklySchedule();
 }
 
@@ -178,8 +195,15 @@ export function renderDepartments() {
 }
 
 export function initializeSchedulerFilter() {
+    const savedFilterJSON = localStorage.getItem('schedulerDepartmentFilter');
+    let savedFilter;
+    try {
+        savedFilter = savedFilterJSON ? JSON.parse(savedFilterJSON) : ['all'];
+    } catch(e) {
+        savedFilter = ['all'];
+    }
+
+    window.selectedDepartmentIds = savedFilter;
     populateDepartmentFilter();
-    // --- FIX: Load the saved filter from localStorage ---
-    const savedFilter = localStorage.getItem('schedulerDepartmentFilter') || 'all';
-    handleDepartmentFilterChange(savedFilter);
+    renderWeeklySchedule(); // Initial render with the loaded filter
 }
