@@ -128,7 +128,11 @@ export async function deleteDepartment(deptId) {
 
     users.forEach(user => { if (user.departmentId === deptId) user.departmentId = null; });
     roles.forEach(role => { if (role.departmentId === deptId) role.departmentId = null; });
-    shiftTemplates.forEach(st => { if (st.departmentId === deptId) st.departmentId = null; });
+    shiftTemplates.forEach(st => {
+        if (Array.isArray(st.departmentIds)) {
+            st.departmentIds = st.departmentIds.filter(id => id !== deptId);
+        }
+    });
 
     if (restaurantSettings.minCoverage && restaurantSettings.minCoverage[deptId]) {
         delete restaurantSettings.minCoverage[deptId];
@@ -155,9 +159,12 @@ export function renderDepartments() {
     if (!dom.departmentListUl) return;
     dom.departmentListUl.innerHTML = '';
     
-    // --- THIS IS THE FIX ---
-    // The nullish coalescing operator '??' correctly handles a sortOrder of 0,
-    // whereas the old '||' operator incorrectly treated 0 as a missing value.
+    // --- BUG FIX & EXPLANATION ---
+    // The department list must be sorted by the 'sortOrder' property before rendering.
+    // This ensures that the custom order set by drag-and-drop is always displayed correctly.
+    // The nullish coalescing operator '??' is critical here. It correctly handles a
+    // sortOrder of 0 (the first item), whereas a simple '||' would incorrectly treat
+    // 0 as a "missing" value and push the first item to the end of the list.
     departments.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
 
 
