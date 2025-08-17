@@ -2,7 +2,7 @@
 
 import { roles, shiftTemplates, departments, users, saveShiftTemplates } from '../state.js';
 import * as dom from '../dom.js';
-import { getTranslatedString } from '../i18n.js';
+import { getTranslatedString } from '../i1n.js';
 import { populateTimeSelectsForElements, generateId, formatTimeToHHMM, calculateShiftDuration, formatTimeForDisplay } from '../utils.js';
 import { HistoryManager, ModifyAssignmentCommand } from '../features/history.js';
 
@@ -38,18 +38,25 @@ function populateRolesForModal(departmentId) {
     });
 }
 
-function populateTemplatesForModal(filterDeptId) {
+function populateTemplatesForModal(filterDeptId, dateStr) {
     if (!dom.assignModalShiftTemplateSelect) return;
     dom.assignModalShiftTemplateSelect.innerHTML = `<option value="">--${getTranslatedString('optSelectShift') || 'Select Shift'}--</option>`;
+    
+    const dayOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(dateStr).getUTCDay()];
+
     const relevantTemplates = shiftTemplates.filter(st => {
+        if (!st.availableDays || !st.availableDays.includes(dayOfWeek)) {
+            return false;
+        }
+
         if (!filterDeptId || filterDeptId === 'all') return true;
-        // Correctly handle both departmentId (string) and departmentIds (array)
+        
         const templateDepts = Array.isArray(st.departmentIds) ? st.departmentIds : (st.departmentId ? [st.departmentId] : []);
         return templateDepts.includes(filterDeptId);
     });
 
     relevantTemplates.forEach(st => {
-        const dept = departments.find(d => d.id === st.departmentId);
+        const dept = departments.find(d => d.id === (Array.isArray(st.departmentIds) ? st.departmentIds[0] : st.departmentId));
         const deptAbbr = dept ? `[${dept.abbreviation}]` : '[GEN]';
         const duration = calculateShiftDuration(st.start, st.end).toFixed(1);
         const displayText = `${deptAbbr} ${st.name}: ${formatTimeForDisplay(st.start)} - ${formatTimeForDisplay(st.end)} [${duration}hrs]`;
@@ -59,6 +66,7 @@ function populateTemplatesForModal(filterDeptId) {
         dom.assignModalShiftTemplateSelect.appendChild(option);
     });
 }
+
 
 function resetCustomTemplateForm() {
     if (dom.saveAsTemplateCheckbox) dom.saveAsTemplateCheckbox.checked = false;
@@ -82,22 +90,20 @@ export function openModalForEdit(assignment, userId, dateStr) {
     } else if (assignment.shiftTemplateId) {
         const tpl = shiftTemplates.find(st => st.id === assignment.shiftTemplateId);
         if (tpl) {
-            // Handle both departmentId and departmentIds
             const templateDepts = Array.isArray(tpl.departmentIds) ? tpl.departmentIds : (tpl.departmentId ? [tpl.departmentId] : []);
             if (templateDepts.length > 0) {
-                shiftDeptId = templateDepts[0]; // Just take the first one for populating the dropdown
+                shiftDeptId = templateDepts[0];
             }
             startTime = tpl.start;
             endTime = tpl.end;
         }
     }
 
-    // ***FIX: Populate the dropdown before setting its value***
     populateDepartmentsForModal();
 
     dom.assignModalDepartmentFilter.value = shiftDeptId || 'all';
     populateRolesForModal(dom.assignModalDepartmentFilter.value);
-    populateTemplatesForModal(dom.assignModalDepartmentFilter.value);
+    populateTemplatesForModal(dom.assignModalDepartmentFilter.value, dateStr);
 
     if (startTime) {
         const [startH, startM] = startTime.split(':');
@@ -138,12 +144,11 @@ export function openAssignShiftModalForNewOrCustom(userId, dateStr) {
     const user = users.find(u => u.id === userId);
     const userDeptId = user ? user.departmentId : null;
 
-    // ***FIX: Populate the dropdown before setting its value***
     populateDepartmentsForModal();
 
     dom.assignModalDepartmentFilter.value = userDeptId !== null ? userDeptId : 'all';
     populateRolesForModal(dom.assignModalDepartmentFilter.value);
-    populateTemplatesForModal(dom.assignModalDepartmentFilter.value);
+    populateTemplatesForModal(dom.assignModalDepartmentFilter.value, dateStr);
 
     if (dom.saveCustomAsTemplateSection) dom.saveCustomAsTemplateSection.style.display = 'block';
     resetCustomTemplateForm();
@@ -201,6 +206,9 @@ export function handleAssignShift() {
                     departmentIds: [dom.assignModalDepartmentFilter.value], 
                     start: newAssignment.customStart,
                     end: newAssignment.customEnd,
+                    // --- THIS IS THE FIX ---
+                    // A new template created this way is available every day by default.
+                    availableDays: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
                 };
                 shiftTemplates.push(newTemplate);
                 saveShiftTemplates();
@@ -236,7 +244,8 @@ export function initAssignShiftModalListeners() {
 
     dom.assignModalDepartmentFilter.addEventListener('change', () => {
         const selectedDeptId = dom.assignModalDepartmentFilter.value;
-        populateTemplatesForModal(selectedDeptId);
+        const dateStr = dom.assignModalDateInput.value;
+        populateTemplatesForModal(selectedDeptId, dateStr);
         populateRolesForModal(selectedDeptId);
     });
 
