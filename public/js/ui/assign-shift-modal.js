@@ -193,12 +193,12 @@ export function handleAssignShift() {
             newAssignment.isCustom = true;
             newAssignment.customStart = formatTimeToHHMM(dom.customShiftStartHourSelect.value, dom.customShiftStartMinuteSelect.value);
             newAssignment.customEnd = formatTimeToHHMM(dom.customShiftEndHourSelect.value, dom.customShiftEndMinuteSelect.value);
-
+            
             if (dom.saveAsTemplateCheckbox.checked && dom.newTemplateNameInput.value.trim()) {
                 const newTemplate = {
                     id: generateId('shift'),
                     name: dom.newTemplateNameInput.value.trim(),
-                    departmentId: dom.assignModalDepartmentFilter.value,
+                    departmentIds: [dom.assignModalDepartmentFilter.value], 
                     start: newAssignment.customStart,
                     end: newAssignment.customEnd,
                 };
