@@ -1,13 +1,7 @@
 // js/state.js
 
-// --- CHANGE: A helper function to delay execution, preventing rapid-fire saves ---
-/**
- * Creates a debounced function that delays invoking the original function until after
- * `wait` milliseconds have elapsed since the last time the debounced function was invoked.
- * @param {Function} func The function to debounce.
- * @param {number} wait The number of milliseconds to delay.
- * @returns {Function} Returns the new debounced function.
- */
+import { markDirtyKey, markDirtyAssignment } from './firebase/firestore.js';
+
 const debounce = (func, wait = 400) => {
     let timeout;
     return function(...args) {
@@ -34,30 +28,49 @@ export function setCurrentUser(user) {
 }
 
 // --- Save Functions ---
-// --- CHANGE: Each save function is now debounced. ---
-// This prevents a "write storm" to Firestore when multiple changes happen in quick succession.
-// For example, clicking multiple day pills on a shift template will now result in only ONE write operation.
+// --- FIX: All save functions now write to localStorage and then mark the key as "dirty" for the sync engine ---
 
-const _saveDepartments = () => localStorage.setItem('departments', JSON.stringify(departments));
-export const saveDepartments = debounce(_saveDepartments, 500);
+export function saveDepartments() {
+    localStorage.setItem('departments', JSON.stringify(departments));
+    markDirtyKey('departments');
+};
 
-const _saveRoles = () => localStorage.setItem('roles', JSON.stringify(roles));
-export const saveRoles = debounce(_saveRoles, 500);
+export function saveRoles() {
+    localStorage.setItem('roles', JSON.stringify(roles));
+    markDirtyKey('roles');
+}
 
-const _saveUsers = () => localStorage.setItem('users', JSON.stringify(users));
-export const saveUsers = debounce(_saveUsers, 500);
+export function saveUsers() {
+    localStorage.setItem('users', JSON.stringify(users));
+    markDirtyKey('users');
+}
 
-const _saveShiftTemplates = () => localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates));
-export const saveShiftTemplates = debounce(_saveShiftTemplates, 500);
+export function saveShiftTemplates() {
+    localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates));
+    markDirtyKey('shiftTemplates');
+}
 
-const _saveScheduleAssignments = () => localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
-export const saveScheduleAssignments = debounce(_saveScheduleAssignments, 500);
+// Special handling for schedule assignments to track individual doc changes
+export function saveScheduleAssignments(updatedDocIds = []) {
+    localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
+    if (updatedDocIds.length > 0) {
+        updatedDocIds.forEach(id => markDirtyAssignment(id));
+    } else {
+        // If no specific IDs are provided, we have to mark the whole collection dirty.
+        // This is a fallback and should be avoided if possible.
+        markDirtyKey('scheduleAssignments');
+    }
+}
 
-const _saveEvents = () => localStorage.setItem('events', JSON.stringify(events));
-export const saveEvents = debounce(_saveEvents, 500);
+export function saveEvents() {
+    localStorage.setItem('events', JSON.stringify(events));
+    markDirtyKey('events');
+}
 
-const _saveRestaurantSettings = () => localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings));
-export const saveRestaurantSettings = debounce(_saveRestaurantSettings, 500);
+export function saveRestaurantSettings() {
+    localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings));
+    markDirtyKey('restaurantSettings');
+}
 
 
 export function saveCurrentViewDate() {

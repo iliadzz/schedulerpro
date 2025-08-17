@@ -1,6 +1,5 @@
 // js/firebase/firestore.js
 
-// 1. Import Dependencies
 import {
     departments,
     roles,
@@ -17,122 +16,156 @@ import { renderShiftTemplates } from '../ui/shifts.js';
 import { renderWeeklySchedule } from '../ui/scheduler.js';
 import { initSettingsTab } from '../ui/settings.js';
 
-// --- Module-level variables ---
-const originalSetItem = window.localStorage.setItem.bind(window.localStorage);
-let activeListeners = [];
 
-// --- NEW: Client-side write counter ---
-let writeCounter = 0;
-function incrementWriteCounter(count = 1) {
-    writeCounter += count;
-    const counterElement = document.getElementById('firestore-write-counter');
-    if (counterElement) {
-        counterElement.textContent = `Writes: ${writeCounter}`;
+// --- NEW SYNC ENGINE ---
+
+const DIRTY_KEYS = new Set();
+const DIRTY_ASSIGNMENTS = new Set();
+let flushTimer = null;
+let isInitialHydrationComplete = false;
+
+/**
+ * Marks a top-level data collection (like 'users' or 'roles') as needing a sync.
+ * @param {string} key The key of the collection to sync.
+ */
+export function markDirtyKey(key) {
+  DIRTY_KEYS.add(key);
+  scheduleFlush();
+}
+
+/**
+ * Marks a specific schedule assignment document as needing a sync.
+ * @param {string} docId The document ID (e.g., "userId-YYYY-MM-DD").
+ */
+export function markDirtyAssignment(docId) {
+  DIRTY_KEYS.add('scheduleAssignments');
+  DIRTY_ASSIGNMENTS.add(docId);
+  scheduleFlush();
+}
+
+/**
+ * Schedules a single, coalesced flush to Firestore after a short delay.
+ * This prevents multiple rapid changes from causing a "write storm".
+ */
+function scheduleFlush() {
+  if (flushTimer) clearTimeout(flushTimer);
+  // Using a 3-second delay to safely batch multiple user actions
+  flushTimer = setTimeout(flushDirtyToFirestore, 3000);
+}
+
+/**
+ * Chunks an array into smaller arrays of a specified size.
+ * Firestore batches are limited to 500 operations.
+ * @param {Array} arr The array to chunk.
+ * @param {number} size The size of each chunk.
+ * @returns {Array<Array>} An array of smaller arrays.
+ */
+function chunk(arr, size) {
+    const chunked = [];
+    for (let i = 0; i < arr.length; i += size) {
+        chunked.push(arr.slice(i, i + size));
+    }
+    return chunked;
+}
+
+/**
+ * The core function that takes all "dirty" data and syncs it to Firestore.
+ */
+async function flushDirtyToFirestore() {
+    if (DIRTY_KEYS.size === 0) return;
+
+    console.log(`[SYNC] Starting flush for dirty keys:`, [...DIRTY_KEYS]);
+    const keysToFlush = Array.from(DIRTY_KEYS);
+    DIRTY_KEYS.clear();
+
+    for (const key of keysToFlush) {
+        try {
+            if (key === 'scheduleAssignments') {
+                const idsToSync = Array.from(DIRTY_ASSIGNMENTS);
+                DIRTY_ASSIGNMENTS.clear();
+                
+                // Chunk the assignment writes into batches of 450 to be safe
+                for (const idChunk of chunk(idsToSync, 450)) {
+                    const batch = window.db.batch();
+                    idChunk.forEach(docId => {
+                        const docData = scheduleAssignments[docId];
+                        const docRef = window.db.collection('scheduleAssignments').doc(docId);
+                        if (docData && docData.shifts && docData.shifts.length > 0) {
+                            batch.set(docRef, docData);
+                        } else {
+                            // If the local data for this ID is empty or gone, delete it.
+                            batch.delete(docRef);
+                        }
+                    });
+                    await batch.commit();
+                    console.log(`[SYNC] Flushed ${idChunk.length} schedule assignment changes.`);
+                }
+            } else if (key === 'restaurantSettings') {
+                const docRef = window.db.collection('settings').doc('main');
+                await docRef.set(restaurantSettings, { merge: true });
+                console.log(`[SYNC] Flushed settings.`);
+            } else {
+                // Handle collection syncs (users, roles, etc.)
+                const localData = { users, departments, roles, events, shiftTemplates }[key];
+                if (localData) {
+                    await syncCollectionWithDiff(key, localData);
+                }
+            }
+        } catch (error) {
+            console.error(`[SYNC] Error flushing key "${key}":`, error);
+        }
     }
 }
 
-
-// --- CHANGE: New helper function to prevent redundant localStorage writes ---
 /**
- * Safely sets an item in localStorage, but only if the new value is different from the existing value.
- * This prevents unnecessary UI re-renders triggered by identical data updates from Firestore.
- * @param {string} key The localStorage key.
- * @param {object} valueObj The JavaScript object to store.
+ * A safer sync function for collections that only adds/updates documents.
+ * It explicitly avoids deleting documents from Firestore just because they are missing locally.
+ * @param {string} collectionName The name of the collection to sync.
+ * @param {Array<object>} localData The complete array of local data.
  */
-function safeSetLocal(key, valueObj) {
-  const nextValue = JSON.stringify(valueObj ?? {});
-  const previousValue = localStorage.getItem(key);
-  if (previousValue === nextValue) {
-      // If the data hasn't changed, do nothing.
-      return;
-  }
-  // Otherwise, update localStorage.
-  originalSetItem(key, nextValue);
-}
-
-
-// --- Private Helper Function ---
-async function syncCollectionToFirestore(collectionName, localData) {
+async function syncCollectionWithDiff(collectionName, localData) {
     if (!window.db) return;
 
     const collectionRef = window.db.collection(collectionName);
-    const batch = window.db.batch();
+    
+    // For simplicity in this patch, we will just write all docs.
+    // A more advanced implementation would compare hashes before writing.
+    const chunks = chunk(localData, 450);
 
-    const snapshot = await collectionRef.get();
-    const firestoreIds = new Set(snapshot.docs.map(doc => doc.id));
-    const localIds = new Set(localData.map(item => String(item.id)));
-
-    let writeOperations = 0;
-
-    firestoreIds.forEach(id => {
-        if (!localIds.has(id)) {
-            batch.delete(collectionRef.doc(id));
-            writeOperations++;
-        }
-    });
-
-    localData.forEach(item => {
-        const docId = String(item.id);
-        const docRef = collectionRef.doc(docId);
-        batch.set(docRef, item);
-        writeOperations++;
-    });
-
-    if (writeOperations > 0) {
-        incrementWriteCounter(writeOperations); // Increment counter for the batch
+    for (const docChunk of chunks) {
+        const batch = window.db.batch();
+        docChunk.forEach(item => {
+            const docRef = collectionRef.doc(String(item.id));
+            batch.set(docRef, item);
+        });
         await batch.commit();
     }
+    console.log(`[SYNC] Flushed ${localData.length} documents for collection "${collectionName}".`);
 }
 
 
-// --- Exported Main Functions ---
+// --- REAL-TIME LISTENERS (Largely unchanged, but now safer) ---
 
-export function initializeSync() {
-    const syncableKeys = ['users', 'departments', 'roles', 'events', 'shiftTemplates', 'scheduleAssignments', 'restaurantSettings'];
+const originalSetItem = window.localStorage.setItem.bind(window.localStorage);
 
-    window.localStorage.setItem = function(key, value) {
-        originalSetItem(key, value); 
-
-        if (!syncableKeys.includes(key) || !window.db) {
-            return;
-        }
-
-        try {
-            const data = JSON.parse(value);
-
-            if (key === 'restaurantSettings') {
-                incrementWriteCounter(); // Count this write
-                window.db.collection('settings').doc('main').set(data || {}, { merge: true });
-            } else if (key === 'scheduleAssignments' && data && typeof data === 'object') {
-                const batch = window.db.batch();
-                let batchSize = 0;
-                Object.keys(data).forEach(docId => {
-                    batch.set(window.db.collection('scheduleAssignments').doc(docId), data[docId] || {});
-                    batchSize++;
-                });
-                if (batchSize > 0) {
-                    incrementWriteCounter(batchSize); // Count writes in batch
-                    batch.commit();
-                }
-            } else if (Array.isArray(data)) {
-                syncCollectionToFirestore(key, data);
-            }
-        } catch (e) {
-            console.error(`Error syncing to Firestore for key "${key}":`, e);
-        }
-    };
+function safeSetLocal(key, valueObj) {
+  const nextValue = JSON.stringify(valueObj ?? {});
+  const previousValue = localStorage.getItem(key);
+  if (previousValue === nextValue) return;
+  originalSetItem(key, nextValue);
 }
+
+let activeListeners = [];
 
 export function cleanupDataListeners() {
     console.log(`Cleaning up ${activeListeners.length} Firestore listeners.`);
     activeListeners.forEach(unsubscribe => unsubscribe());
     activeListeners = [];
+    isInitialHydrationComplete = false; // Reset hydration flag
 }
 
 export function initializeDataListeners() {
-    if (!window.db || activeListeners.length > 0) {
-        return;
-    }
+    if (!window.db || activeListeners.length > 0) return;
 
     const renderAll = () => {
         renderDepartments();
@@ -143,65 +176,25 @@ export function initializeDataListeners() {
         renderWeeklySchedule();
     };
 
-    activeListeners.push(
-        window.db.collection('departments').onSnapshot(snapshot => {
-            if (snapshot.metadata.hasPendingWrites) return;
-            console.log("Firestore: Departments updated.");
-            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            departments.length = 0;
-            Array.prototype.push.apply(departments, updatedData);
-            safeSetLocal('departments', departments);
-            renderAll();
-        })
-    );
+    const collectionsToSync = ['departments', 'roles', 'users', 'shiftTemplates', 'events'];
+    
+    collectionsToSync.forEach(collection => {
+        activeListeners.push(
+            window.db.collection(collection).onSnapshot(snapshot => {
+                if (snapshot.metadata.hasPendingWrites) return;
+                console.log(`Firestore: ${collection} updated.`);
+                const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                
+                // Directly update the in-memory state
+                const stateArray = { departments, roles, users, shiftTemplates, events }[collection];
+                stateArray.length = 0;
+                Array.prototype.push.apply(stateArray, data);
 
-    activeListeners.push(
-        window.db.collection('roles').onSnapshot(snapshot => {
-            if (snapshot.metadata.hasPendingWrites) return;
-            console.log("Firestore: Roles updated.");
-            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            roles.length = 0;
-            Array.prototype.push.apply(roles, updatedData);
-            safeSetLocal('roles', roles);
-            renderAll();
-        })
-    );
-
-    activeListeners.push(
-        window.db.collection('users').onSnapshot(snapshot => {
-            if (snapshot.metadata.hasPendingWrites) return;
-            console.log("Firestore: Users updated.");
-            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            users.length = 0;
-            Array.prototype.push.apply(users, updatedData);
-            safeSetLocal('users', users);
-            renderAll();
-        })
-    );
-
-    activeListeners.push(
-        window.db.collection('shiftTemplates').onSnapshot(snapshot => {
-            if (snapshot.metadata.hasPendingWrites) return;
-            console.log("Firestore: Shift Templates updated.");
-            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            shiftTemplates.length = 0;
-            Array.prototype.push.apply(shiftTemplates, updatedData);
-            safeSetLocal('shiftTemplates', shiftTemplates);
-            renderAll();
-        })
-    );
-
-    activeListeners.push(
-        window.db.collection('events').onSnapshot(snapshot => {
-            if (snapshot.metadata.hasPendingWrites) return;
-            console.log("Firestore: Events updated.");
-            const updatedData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            events.length = 0;
-            Array.prototype.push.apply(events, updatedData);
-            safeSetLocal('events', events);
-            renderWeeklySchedule();
-        })
-    );
+                safeSetLocal(collection, data);
+                renderAll();
+            })
+        );
+    });
 
     activeListeners.push(
         window.db.collection('scheduleAssignments').onSnapshot(snapshot => {
@@ -224,6 +217,14 @@ export function initializeDataListeners() {
             safeSetLocal('restaurantSettings', restaurantSettings);
             initSettingsTab();
             renderWeeklySchedule();
+            
+            // Mark initial hydration as complete after the last listener gets data
+            isInitialHydrationComplete = true; 
         })
     );
+}
+
+// THIS is the replacement for the old initializeSync function. It no longer overrides localStorage.setItem.
+export function initializeSync() {
+    console.log("Sync engine initialized. Manual flushing is now active.");
 }
