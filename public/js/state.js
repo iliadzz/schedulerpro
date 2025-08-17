@@ -1,5 +1,13 @@
 // js/state.js
 
+// --- CHANGE: A helper function to delay execution, preventing rapid-fire saves ---
+/**
+ * Creates a debounced function that delays invoking the original function until after
+ * `wait` milliseconds have elapsed since the last time the debounced function was invoked.
+ * @param {Function} func The function to debounce.
+ * @param {number} wait The number of milliseconds to delay.
+ * @returns {Function} Returns the new debounced function.
+ */
 const debounce = (func, wait = 400) => {
     let timeout;
     return function(...args) {
@@ -26,12 +34,12 @@ export function setCurrentUser(user) {
 }
 
 // --- Save Functions ---
-export function saveDepartments() {
-    departments.forEach((dept, index) => {
-        dept.sortOrder = index;
-    });
-    localStorage.setItem('departments', JSON.stringify(departments));
-};
+// --- CHANGE: Each save function is now debounced. ---
+// This prevents a "write storm" to Firestore when multiple changes happen in quick succession.
+// For example, clicking multiple day pills on a shift template will now result in only ONE write operation.
+
+const _saveDepartments = () => localStorage.setItem('departments', JSON.stringify(departments));
+export const saveDepartments = debounce(_saveDepartments, 500);
 
 const _saveRoles = () => localStorage.setItem('roles', JSON.stringify(roles));
 export const saveRoles = debounce(_saveRoles, 500);
@@ -56,18 +64,10 @@ export function saveCurrentViewDate() {
     localStorage.setItem('schedulerCurrentViewDate', currentViewDate.toISOString());
 }
 
-// --- CHANGE: Added a function to save the chosen employee display format ---
-export function saveEmployeeDisplayFormat() {
-    localStorage.setItem('employeeDisplayFormat', employeeDisplayFormat);
-}
-
 
 // --- Application UI State ---
 const savedDate = localStorage.getItem('schedulerCurrentViewDate');
 export let currentViewDate = savedDate ? new Date(savedDate) : new Date();
-
-// --- CHANGE: The display format is now loaded from localStorage and exported ---
-export let employeeDisplayFormat = localStorage.getItem('employeeDisplayFormat') || 'LF'; // Default to 'Last, First'
 
 export let weekStartsOnMonday = true;
 export let selectedDepartmentIds = ['all'];
