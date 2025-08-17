@@ -2,8 +2,6 @@
 
 import { scheduleAssignments, saveScheduleAssignments } from '../state.js';
 import { generateId } from '../utils.js';
-// --- THIS IS THE FIX ---
-// Import the main rendering function for the scheduler.
 import { renderWeeklySchedule } from '../ui/scheduler.js';
 
 const undoBtn = document.getElementById('undo-btn');
@@ -29,9 +27,8 @@ export function ModifyAssignmentCommand(userId, dateStr, newAssignment, oldAssig
         } else {
             dayData.shifts.push(this.newAssignment);
         }
-        saveScheduleAssignments();
-        // --- THIS IS THE FIX ---
-        // After executing a change, always re-render the schedule to show it.
+        // FIX: Pass the specific document ID that was changed to the save function.
+        saveScheduleAssignments([this.assignmentKey]);
         renderWeeklySchedule();
     };
 
@@ -44,11 +41,14 @@ export function ModifyAssignmentCommand(userId, dateStr, newAssignment, oldAssig
                 dayData.shifts[index] = this.oldAssignment;
             } else {
                 dayData.shifts.splice(index, 1);
+                 // If the last shift is removed, delete the whole entry
+                if (dayData.shifts.length === 0) {
+                    delete scheduleAssignments[this.assignmentKey];
+                }
             }
         }
-        saveScheduleAssignments();
-        // --- THIS IS THE FIX ---
-        // After undoing a change, always re-render the schedule.
+        // FIX: Pass the specific document ID that was changed to the save function.
+        saveScheduleAssignments([this.assignmentKey]);
         renderWeeklySchedule();
     };
 }
@@ -66,9 +66,13 @@ export function DeleteAssignmentCommand(userId, dateStr, assignmentId) {
             const index = dayData.shifts.findIndex(a => a.assignmentId === this.assignmentId);
             if (index > -1) {
                 this.deletedAssignment = dayData.shifts.splice(index, 1)[0];
+                if (dayData.shifts.length === 0) {
+                    delete scheduleAssignments[this.assignmentKey];
+                }
             }
         }
-        saveScheduleAssignments();
+        // FIX: Pass the specific document ID that was changed to the save function.
+        saveScheduleAssignments([this.assignmentKey]);
         renderWeeklySchedule();
     };
 
@@ -77,7 +81,8 @@ export function DeleteAssignmentCommand(userId, dateStr, assignmentId) {
         const dayData = scheduleAssignments[this.assignmentKey] || { shifts: [] };
         scheduleAssignments[this.assignmentKey] = dayData;
         dayData.shifts.push(this.deletedAssignment);
-        saveScheduleAssignments();
+        // FIX: Pass the specific document ID that was changed to the save function.
+        saveScheduleAssignments([this.assignmentKey]);
         renderWeeklySchedule();
     };
 }
@@ -107,12 +112,17 @@ export function DragDropCommand(dragDetails) {
         }
         scheduleAssignments[this.targetKey].shifts.push(this.assignment);
 
+        const dirtyKeys = [this.targetKey];
+
         if (!this.isCopy) {
             const sourceDay = scheduleAssignments[this.sourceKey];
             const index = sourceDay.shifts.findIndex(a => a.assignmentId === dragDetails.assignmentId);
             if (index > -1) sourceDay.shifts.splice(index, 1);
+            if (sourceDay.shifts.length === 0) delete scheduleAssignments[this.sourceKey];
+            dirtyKeys.push(this.sourceKey);
         }
-        saveScheduleAssignments();
+        // FIX: Pass all modified document IDs to the save function.
+        saveScheduleAssignments(dirtyKeys);
         renderWeeklySchedule();
     };
 
@@ -120,13 +130,19 @@ export function DragDropCommand(dragDetails) {
         const targetDay = scheduleAssignments[this.targetKey];
         const index = targetDay.shifts.findIndex(a => a.assignmentId === this.assignment.assignmentId);
         if (index > -1) targetDay.shifts.splice(index, 1);
+        if (targetDay.shifts.length === 0) delete scheduleAssignments[this.targetKey];
+
+        const dirtyKeys = [this.targetKey];
 
         if (!this.isCopy) {
-            const sourceDay = scheduleAssignments[this.sourceKey];
+            const sourceDay = scheduleAssignments[this.sourceKey] || { shifts: [] };
+            scheduleAssignments[this.sourceKey] = sourceDay;
             const originalAssignment = { ...this.assignment, assignmentId: dragDetails.assignmentId };
             sourceDay.shifts.push(originalAssignment);
+            dirtyKeys.push(this.sourceKey);
         }
-        saveScheduleAssignments();
+        // FIX: Pass all modified document IDs to the save function.
+        saveScheduleAssignments(dirtyKeys);
         renderWeeklySchedule();
     };
 }
