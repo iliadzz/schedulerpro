@@ -2,7 +2,7 @@
 
 import { roles, shiftTemplates, departments, users, saveShiftTemplates } from '../state.js';
 import * as dom from '../dom.js';
-import { getTranslatedString } from '../i1n.js';
+import { getTranslatedString } from '../i18n.js';
 import { populateTimeSelectsForElements, generateId, formatTimeToHHMM, calculateShiftDuration, formatTimeForDisplay } from '../utils.js';
 import { HistoryManager, ModifyAssignmentCommand } from '../features/history.js';
 
