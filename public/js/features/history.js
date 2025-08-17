@@ -1,10 +1,10 @@
-// This module will exclusively manage the undo/redo functionality. It will contain the HistoryManager object and its methods (doAction, undo, redo). 
-// The command classes (ModifyAssignmentCommand, etc.) defined in scheduler.js will also be moved here.
-
 // js/features/history.js
 
 import { scheduleAssignments, saveScheduleAssignments } from '../state.js';
 import { generateId } from '../utils.js';
+// --- THIS IS THE FIX ---
+// Import the main rendering function for the scheduler.
+import { renderWeeklySchedule } from '../ui/scheduler.js';
 
 const undoBtn = document.getElementById('undo-btn');
 const redoBtn = document.getElementById('redo-btn');
@@ -30,6 +30,9 @@ export function ModifyAssignmentCommand(userId, dateStr, newAssignment, oldAssig
             dayData.shifts.push(this.newAssignment);
         }
         saveScheduleAssignments();
+        // --- THIS IS THE FIX ---
+        // After executing a change, always re-render the schedule to show it.
+        renderWeeklySchedule();
     };
 
     this.undo = function() {
@@ -44,6 +47,9 @@ export function ModifyAssignmentCommand(userId, dateStr, newAssignment, oldAssig
             }
         }
         saveScheduleAssignments();
+        // --- THIS IS THE FIX ---
+        // After undoing a change, always re-render the schedule.
+        renderWeeklySchedule();
     };
 }
 
@@ -63,6 +69,7 @@ export function DeleteAssignmentCommand(userId, dateStr, assignmentId) {
             }
         }
         saveScheduleAssignments();
+        renderWeeklySchedule();
     };
 
     this.undo = function() {
@@ -71,6 +78,7 @@ export function DeleteAssignmentCommand(userId, dateStr, assignmentId) {
         scheduleAssignments[this.assignmentKey] = dayData;
         dayData.shifts.push(this.deletedAssignment);
         saveScheduleAssignments();
+        renderWeeklySchedule();
     };
 }
 
@@ -105,6 +113,7 @@ export function DragDropCommand(dragDetails) {
             if (index > -1) sourceDay.shifts.splice(index, 1);
         }
         saveScheduleAssignments();
+        renderWeeklySchedule();
     };
 
     this.undo = function() {
@@ -118,6 +127,7 @@ export function DragDropCommand(dragDetails) {
             sourceDay.shifts.push(originalAssignment);
         }
         saveScheduleAssignments();
+        renderWeeklySchedule();
     };
 }
 

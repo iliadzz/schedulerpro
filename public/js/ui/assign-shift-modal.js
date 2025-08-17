@@ -9,9 +9,6 @@ import { HistoryManager, ModifyAssignmentCommand } from '../features/history.js'
 let currentAssignMode = 'template';
 let editingAssignmentDetails = null;
 
-/**
- * Populates the department filter dropdown in the assign shift modal.
- */
 function populateDepartmentsForModal() {
     if (!dom.assignModalDepartmentFilter) return;
     dom.assignModalDepartmentFilter.innerHTML = `<option value="all">${getTranslatedString('optAllDepts')}</option>`;
@@ -206,8 +203,6 @@ export function handleAssignShift() {
                     departmentIds: [dom.assignModalDepartmentFilter.value], 
                     start: newAssignment.customStart,
                     end: newAssignment.customEnd,
-                    // --- THIS IS THE FIX ---
-                    // A new template created this way is available every day by default.
                     availableDays: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
                 };
                 shiftTemplates.push(newTemplate);
