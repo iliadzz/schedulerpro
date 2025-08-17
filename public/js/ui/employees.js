@@ -9,7 +9,7 @@ import {
     saveUsers,
     saveScheduleAssignments,
     currentUser,
-    // --- CHANGE: Import the new state variable and save function ---
+    // --- Import the new state variable and save function ---
     employeeDisplayFormat,
     saveEmployeeDisplayFormat
 } from '../state.js';
@@ -17,15 +17,12 @@ import {
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { createItemActionButtons, generateId } from '../utils.js';
-// --- CHANGE: Import scheduler render function to trigger updates ---
 import { renderWeeklySchedule } from './scheduler.js';
 
 
 // --- Module-level state for filters ---
 let selectedDeptIds = ['all'];
 let showInactive = false;
-// --- CHANGE: The local displayFormat variable is no longer needed ---
-// let displayFormat = 'LF'; 
 
 function renderEmployeeFilters() {
     const container = document.getElementById('employee-filter-pills');
@@ -108,21 +105,13 @@ function renderDisplayFormatPills() {
         pill.className = 'pill display-format-pill';
         pill.textContent = format.id;
         pill.title = format.text;
-        // --- CHANGE: Read from the central state variable ---
         if (employeeDisplayFormat === format.id) {
             pill.classList.add('active');
         }
         pill.addEventListener('click', () => {
-            // --- CHANGE: Update the central state, save it, and re-render both views ---
-            // This is a bit of a workaround to update the state variable directly.
-            // In a more complex app, we'd use a setter function.
-            let newFormat = format.id;
-            localStorage.setItem('employeeDisplayFormat', newFormat);
-            // Manually update the imported variable for the current session
-            // This is a simplified approach for this app's architecture.
-            // A more robust solution might involve a state management library.
-            // For now, we reload the module's view of the state.
-            location.reload(); // Simplest way to ensure all modules get the new state
+            // A page reload is the simplest way to ensure the new state propagates everywhere
+            localStorage.setItem('employeeDisplayFormat', format.id);
+            location.reload();
         });
         container.appendChild(pill);
     });
@@ -348,7 +337,6 @@ export function renderEmployees() {
 
 
     employeesToDisplay.sort((a, b) => {
-        // --- CHANGE: Use the central state variable for sorting ---
         if (employeeDisplayFormat === 'LF') {
             return (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || '');
         }
@@ -365,7 +353,6 @@ export function renderEmployees() {
         const deptAbbr = dept ? `[${dept.abbreviation}]` : '';
 
         let employeeName;
-        // --- CHANGE: Use the central state variable for display ---
         switch (employeeDisplayFormat) {
             case 'LF':
                 employeeName = `${user.lastName || ''}, ${user.firstName || ''}`;

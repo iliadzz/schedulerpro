@@ -1,6 +1,6 @@
 // js/ui/scheduler.js
 
-// --- CHANGE: Import the new employeeDisplayFormat state variable ---
+// --- Import the new employeeDisplayFormat state variable ---
 import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments, departments, employeeDisplayFormat } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
@@ -154,7 +154,6 @@ export function executeCopyWeek() {
 export function handleClearWeek() {
     if (!clearWeekConfirmModal) return;
 
-    // Dynamically generate the confirmation text to be specific.
     const week = getWeekRange(currentViewDate);
     const weekStartStr = formatDate(week.start);
     const weekEndStr = formatDate(week.end);
@@ -165,10 +164,6 @@ export function handleClearWeek() {
     clearWeekConfirmModal.style.display = 'block';
 }
 
-/**
- * Wires up the event listeners for the 'Clear Week' confirmation modal buttons.
- * This will be called once from main.js when the application starts.
- */
 export function initClearWeekModalListeners() {
     if (!clearWeekConfirmModal) return;
 
@@ -182,7 +177,6 @@ export function initClearWeekModalListeners() {
                 const dayData = scheduleAssignments[`${user.id}-${dateStr}`];
 
                 if (dayData && dayData.shifts) {
-                    // Create a copy of shifts to iterate over, as the original will be modified
                     [...dayData.shifts].forEach(assignment => {
                         let shouldDelete = false;
                         switch (filter) {
@@ -198,7 +192,6 @@ export function initClearWeekModalListeners() {
                         }
 
                         if (shouldDelete) {
-                            // Use the existing, undoable delete function
                             deleteAssignedShift(user.id, dateStr, assignment.assignmentId);
                         }
                     });
@@ -279,7 +272,6 @@ export function renderWeeklySchedule() {
         const bk = sortKeyForEmployee(b);
         if (ak !== bk) return ak - bk;
         
-        // --- CHANGE: The final fallback sort now respects the selected display format ---
         if (employeeDisplayFormat === 'LF') {
             return (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || '');
         }
@@ -321,7 +313,6 @@ export function renderWeeklySchedule() {
 
         userRowLabel.dataset.employeeId = user.id;
         
-        // --- CHANGE: Determine the employee name to display based on the global format setting ---
         let employeeNameToDisplay;
         switch (employeeDisplayFormat) {
             case 'LF':

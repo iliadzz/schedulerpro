@@ -1,7 +1,5 @@
 // js/state.js
 
-import { markDirtyKey, markDirtyAssignment } from './firebase/firestore.js';
-
 const debounce = (func, wait = 400) => {
     let timeout;
     return function(...args) {
@@ -28,59 +26,48 @@ export function setCurrentUser(user) {
 }
 
 // --- Save Functions ---
-// --- FIX: All save functions now write to localStorage and then mark the key as "dirty" for the sync engine ---
-
 export function saveDepartments() {
+    departments.forEach((dept, index) => {
+        dept.sortOrder = index;
+    });
     localStorage.setItem('departments', JSON.stringify(departments));
-    markDirtyKey('departments');
 };
 
-export function saveRoles() {
-    localStorage.setItem('roles', JSON.stringify(roles));
-    markDirtyKey('roles');
-}
+const _saveRoles = () => localStorage.setItem('roles', JSON.stringify(roles));
+export const saveRoles = debounce(_saveRoles, 500);
 
-export function saveUsers() {
-    localStorage.setItem('users', JSON.stringify(users));
-    markDirtyKey('users');
-}
+const _saveUsers = () => localStorage.setItem('users', JSON.stringify(users));
+export const saveUsers = debounce(_saveUsers, 500);
 
-export function saveShiftTemplates() {
-    localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates));
-    markDirtyKey('shiftTemplates');
-}
+const _saveShiftTemplates = () => localStorage.setItem('shiftTemplates', JSON.stringify(shiftTemplates));
+export const saveShiftTemplates = debounce(_saveShiftTemplates, 500);
 
-// Special handling for schedule assignments to track individual doc changes
-export function saveScheduleAssignments(updatedDocIds = []) {
-    localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
-    if (updatedDocIds.length > 0) {
-        updatedDocIds.forEach(id => markDirtyAssignment(id));
-    } else {
-        // If no specific IDs are provided, we have to mark the whole collection dirty.
-        // This is a fallback and should be avoided if possible.
-        markDirtyKey('scheduleAssignments');
-    }
-}
+const _saveScheduleAssignments = () => localStorage.setItem('scheduleAssignments', JSON.stringify(scheduleAssignments));
+export const saveScheduleAssignments = debounce(_saveScheduleAssignments, 500);
 
-export function saveEvents() {
-    localStorage.setItem('events', JSON.stringify(events));
-    markDirtyKey('events');
-}
+const _saveEvents = () => localStorage.setItem('events', JSON.stringify(events));
+export const saveEvents = debounce(_saveEvents, 500);
 
-export function saveRestaurantSettings() {
-    localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings));
-    markDirtyKey('restaurantSettings');
-}
+const _saveRestaurantSettings = () => localStorage.setItem('restaurantSettings', JSON.stringify(restaurantSettings));
+export const saveRestaurantSettings = debounce(_saveRestaurantSettings, 500);
 
 
 export function saveCurrentViewDate() {
     localStorage.setItem('schedulerCurrentViewDate', currentViewDate.toISOString());
 }
 
+// --- Function to save the chosen employee display format ---
+export function saveEmployeeDisplayFormat() {
+    localStorage.setItem('employeeDisplayFormat', employeeDisplayFormat);
+}
+
 
 // --- Application UI State ---
 const savedDate = localStorage.getItem('schedulerCurrentViewDate');
 export let currentViewDate = savedDate ? new Date(savedDate) : new Date();
+
+// --- The display format is now loaded from localStorage and exported ---
+export let employeeDisplayFormat = localStorage.getItem('employeeDisplayFormat') || 'LF'; // Default to 'Last, First'
 
 export let weekStartsOnMonday = true;
 export let selectedDepartmentIds = ['all'];
