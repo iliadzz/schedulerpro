@@ -1,6 +1,5 @@
 // js/ui/scheduler.js
 
-// --- THIS IS THE FIX: Import 'departments' from the central state ---
 import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments, departments } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
@@ -184,15 +183,30 @@ export function renderWeeklySchedule() {
         visibleUsers = visibleUsers.filter(user => managerDepts.includes(user.departmentId));
     }
 
+    // --- THIS IS THE FIX ---
+    // Create a map for quick department sorting. The index in the main 'departments'
+    // array determines the sort order. Unassigned departments get a high number to appear last.
+    const departmentOrderMap = new Map();
+    departments.forEach((dept, index) => {
+        departmentOrderMap.set(dept.id, index);
+    });
+
     visibleUsers.sort((a, b) => {
-        const deptA = departments.find(d => d.id === a.departmentId)?.name || 'ZZZ';
-        const deptB = departments.find(d => d.id === b.departmentId)?.name || 'ZZZ';
-        if (deptA.localeCompare(deptB) !== 0) {
-            return deptA.localeCompare(deptB);
+        // Get the sort order number for each employee's department.
+        const orderA = departmentOrderMap.get(a.departmentId) ?? 999;
+        const orderB = departmentOrderMap.get(b.departmentId) ?? 999;
+
+        // 1. Primary Sort: Department Order
+        if (orderA !== orderB) {
+            return orderA - orderB;
         }
+
+        // 2. Secondary Sort: Employee Drag-and-Drop Order
         const ak = sortKeyForEmployee(a);
         const bk = sortKeyForEmployee(b);
         if (ak !== bk) return ak - bk;
+        
+        // 3. Tertiary Sort: Display Name (fallback)
         return (a.displayName || '').localeCompare(b.displayName || '') || a.id.localeCompare(b.id);
     });
 
