@@ -344,15 +344,25 @@ export function resetShiftTemplateForm() {
  */
 export function deleteShiftTemplate(stId) {
     if (!confirm(`Are you sure you want to delete this shift template?`)) return;
-    const updatedTemplates = shiftTemplates.filter(st => st.id !== stId);
-    shiftTemplates.length = 0;
-    Array.prototype.push.apply(shiftTemplates, updatedTemplates);
-    saveShiftTemplates();
-    renderShiftTemplates();
-    if (dom.editingShiftTemplateIdInput.value === stId) {
-        resetShiftTemplateForm();
+
+    // --- FIX: Ensure the state update is atomic and saved before re-rendering ---
+    // Find the index of the template to delete.
+    const templateIndex = shiftTemplates.findIndex(st => st.id === stId);
+
+    if (templateIndex > -1) {
+        // Remove the template from the array.
+        shiftTemplates.splice(templateIndex, 1);
+        // Save the updated array to localStorage and sync with Firestore.
+        saveShiftTemplates();
+        // Now, re-render the UI with the updated data.
+        renderShiftTemplates();
+        // If the deleted template was being edited, reset the form.
+        if (dom.editingShiftTemplateIdInput.value === stId) {
+            resetShiftTemplateForm();
+        }
     }
 }
+
 
 /**
  * Handles the 'Save' button click for a shift template, either creating or updating.
@@ -413,7 +423,8 @@ export function renderShiftTemplates() {
     if (currentUser && currentUser.role === 'Manager') {
         const managerDepts = currentUser.managedDepartmentIds || [];
         filteredTemplates = filteredTemplates.filter(st => {
-            return (st.departmentIds || []).some(deptId => managerDepts.includes(deptId));
+            const templateDepts = Array.isArray(st.departmentIds) ? st.departmentIds : (st.departmentId ? [st.departmentId] : []);
+            return templateDepts.some(deptId => managerDepts.includes(deptId));
         });
         if (multiselectElement) {
             multiselectElement.style.display = 'none';
@@ -439,24 +450,37 @@ export function renderShiftTemplates() {
     // Group templates by department for display.
     const groupedByDept = filteredTemplates.reduce((acc, template) => {
         const deptIds = Array.isArray(template.departmentIds) ? template.departmentIds : (template.departmentId ? [template.departmentId] : []);
+
+        const displayDepts = selectedDeptIds ? deptIds.filter(id => selectedDeptIds.includes(id)) : deptIds;
+
         if (deptIds.length === 0) {
-            if (!acc._unassigned) {
-                acc._unassigned = { name: 'Unassigned', templates: [] };
+             if (selectedDeptIds === null || selectedDeptIds.includes('_unassigned')) {
+                if (!acc._unassigned) {
+                    acc._unassigned = { name: 'Unassigned', templates: [] };
+                }
+                acc._unassigned.templates.push(template);
             }
-            acc._unassigned.templates.push(template);
         } else {
-            deptIds.forEach(deptId => {
+            // --- FIX: This ensures that if a department is selected in the filter,
+            // the shift is ONLY displayed under that department's group.
+            const targetDeptIds = selectedDeptIds ? deptIds.filter(id => selectedDeptIds.includes(id)) : deptIds;
+
+            targetDeptIds.forEach(deptId => {
                 if (!acc[deptId]) {
                     acc[deptId] = {
                         name: departments.find(d => d.id === deptId)?.name || 'Unassigned',
                         templates: []
                     };
                 }
-                acc[deptId].templates.push(template);
+                // Prevent duplicate additions if a shift belongs to multiple displayed depts
+                if (!acc[deptId].templates.some(t => t.id === template.id)) {
+                    acc[deptId].templates.push(template);
+                }
             });
         }
         return acc;
     }, {});
+
 
     // Sort templates within each group based on the selected sort mode.
     Object.values(groupedByDept).forEach(deptGroup => {
