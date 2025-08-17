@@ -1,24 +1,42 @@
 // js/ui/shifts.js
 
+/**
+ * @file Manages all UI interactions for the 'Shift Templates' tab.
+ * This includes rendering the list of templates, handling the add/edit form,
+ * managing department filters, and controlling the interactive time picker modal.
+ */
+
+// --- 1. IMPORT MODULES ---
 import { shiftTemplates, departments, saveShiftTemplates, currentUser } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { createItemActionButtons, calculateShiftDuration, formatTimeForDisplay, formatTimeToHHMM, generateId } from '../utils.js';
 
+// --- 2. MODULE-LEVEL STATE AND CONSTANTS ---
+
+// Key for storing the department filter state in localStorage.
 const SHIFTS_FILTER_KEY = 'shiftsDepartmentFilterState';
 
-let sortMode = 'ST'; // ST, END
+// Default sort mode for the template list ('ST' for Start Time, 'END' for End Time).
+let sortMode = 'ST';
 
+// Constants for day sorting and display.
 const daysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const dayNames = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
 
-// --- Time Picker Modal Logic ---
+// --- 3. TIME PICKER MODAL LOGIC ---
 
+// Holds a reference to the pill and input elements that the time picker is currently modifying.
 let activeTimePickerTarget = {
     pill: null,
     input: null
 };
 
+/**
+ * Opens and populates the time picker modal with hours and minutes.
+ * @param {HTMLElement} pillElement - The button element that displays the time.
+ * @param {HTMLInputElement} inputElement - The hidden input element that stores the time value.
+ */
 function openTimePicker(pillElement, inputElement) {
     const modal = document.getElementById('time-picker-modal');
     if (!modal) return;
@@ -33,7 +51,7 @@ function openTimePicker(pillElement, inputElement) {
     hoursContainer.innerHTML = '';
     minutesContainer.innerHTML = '';
 
-    // Populate hours
+    // Populate hour pills (00-23).
     for (let i = 0; i < 24; i++) {
         const hour = String(i).padStart(2, '0');
         const hourPill = document.createElement('button');
@@ -51,7 +69,7 @@ function openTimePicker(pillElement, inputElement) {
         hoursContainer.appendChild(hourPill);
     }
 
-    // Populate minutes in increments of 5
+    // Populate minute pills (00, 05, 10, ...).
     for (let i = 0; i < 60; i += 5) {
         const minute = String(i).padStart(2, '0');
         const minutePill = document.createElement('button');
@@ -72,6 +90,9 @@ function openTimePicker(pillElement, inputElement) {
     modal.style.display = 'block';
 }
 
+/**
+ * Saves the selected time from the modal to the target elements and closes the modal.
+ */
 function saveSelectedTime() {
     const modal = document.getElementById('time-picker-modal');
     const selectedHourPill = document.querySelector('#time-picker-hours .pill.active');
@@ -92,11 +113,17 @@ function saveSelectedTime() {
     modal.style.display = 'none';
 }
 
+/**
+ * Closes the time picker modal without saving.
+ */
 function cancelTimePicker() {
     const modal = document.getElementById('time-picker-modal');
     if(modal) modal.style.display = 'none';
 }
 
+/**
+ * Initializes event listeners for the time picker modal buttons and triggers.
+ */
 export function initTimePickerModal() {
     dom.shiftTemplateStartTimePill?.addEventListener('click', () => {
         openTimePicker(dom.shiftTemplateStartTimePill, dom.shiftTemplateStartTimeInput);
@@ -110,6 +137,18 @@ export function initTimePickerModal() {
 }
 
 
+// --- 4. UTILITY FUNCTIONS for FORM ---
+
+/**
+ * Renders a set of interactive pills (buttons) inside a container.
+ * Used for selecting days and departments in the shift template form.
+ * @param {HTMLElement} container - The container to render pills into.
+ * @param {Array<object>} items - The data array for the pills (e.g., departments).
+ * @param {Array<string>} selectedIds - An array of IDs that should be marked as active.
+ * @param {string} key - A prefix for the pill's class name (e.g., 'dept').
+ * @param {string} nameProp - The property from the item object to use for the pill's text.
+ * @param {string} activeClass - The CSS class to apply when a pill is active.
+ */
 function renderPills(container, items, selectedIds, key, nameProp, activeClass) {
     container.innerHTML = '';
     items.forEach(item => {
@@ -133,6 +172,12 @@ function renderPills(container, items, selectedIds, key, nameProp, activeClass) 
     });
 }
 
+/**
+ * Gets the IDs of all currently selected pills within a container.
+ * @param {HTMLElement} container - The pill container element.
+ * @param {string} activeClass - The CSS class that indicates a pill is active.
+ * @returns {Array<string>} An array of the selected item IDs.
+ */
 function getSelectedPillIds(container, activeClass) {
     const selected = [];
     container.querySelectorAll(`.pill.${activeClass}`).forEach(pill => {
@@ -141,6 +186,11 @@ function getSelectedPillIds(container, activeClass) {
     return selected;
 }
 
+// --- 5. DEPARTMENT FILTER LOGIC ---
+
+/**
+ * Dynamically creates the multi-select dropdown for filtering shift templates by department if it doesn't already exist.
+ */
 export function ensureShiftDeptMultiselect() {
   if (document.getElementById('shift-dept-multiselect')) return;
   const wrapper = document.createElement('div');
@@ -153,6 +203,7 @@ export function ensureShiftDeptMultiselect() {
     </div>
     <div class="checkboxes-container" id="shift-dept-checkboxes"></div>
   `;
+  // Replace the old filter element with this new multi-select component.
   if (dom.shiftTemplateListFilter && dom.shiftTemplateListFilter.parentElement) {
     dom.shiftTemplateListFilter.style.display = 'none';
     dom.shiftTemplateListFilter.parentElement.insertBefore(wrapper, dom.shiftTemplateListFilter);
@@ -163,6 +214,7 @@ export function ensureShiftDeptMultiselect() {
     checks.classList.toggle('visible');
     button.classList.toggle('expanded');
   });
+  // Close dropdown if clicked outside.
   window.addEventListener('click', (ev) => {
     if (!wrapper.contains(ev.target)) {
       checks.classList.remove('visible');
@@ -171,10 +223,14 @@ export function ensureShiftDeptMultiselect() {
   });
 }
 
+/**
+ * Populates the department filter dropdown with checkboxes, based on saved state.
+ */
 export function populateShiftDeptCheckboxes() {
   const checks = document.getElementById('shift-dept-checkboxes');
   if (!checks) return;
   checks.innerHTML = '';
+  // Load filter state from localStorage to persist user's choice.
   const savedJSON = localStorage.getItem(SHIFTS_FILTER_KEY);
   const saved = savedJSON ? JSON.parse(savedJSON) : null;
   const isChecked = (value, def = true) => {
@@ -192,14 +248,17 @@ export function populateShiftDeptCheckboxes() {
     lab.innerHTML = `<input type="checkbox" value="${d.id}" ${checked ? 'checked' : ''}> ${d.name}`;
     checks.appendChild(lab);
   });
+  // Add event listeners to handle checkbox changes.
   checks.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', (e) => {
     const all = checks.querySelector('input[value="all"]');
     const boxes = [...checks.querySelectorAll('input[type="checkbox"]')];
+    // Handle "All" checkbox logic.
     if (e && e.target.value === 'all') {
       boxes.forEach(cb => cb.checked = all.checked);
     } else {
       all.checked = boxes.slice(1).every(cb => cb.checked);
     }
+    // Save state and re-render.
     const state = boxes.map(cb => ({ value: cb.value, checked: cb.checked }));
     localStorage.setItem(SHIFTS_FILTER_KEY, JSON.stringify(state));
     updateShiftDeptLabel();
@@ -208,6 +267,10 @@ export function populateShiftDeptCheckboxes() {
   updateShiftDeptLabel();
 }
 
+/**
+ * Retrieves the currently selected department IDs from the filter state.
+ * @returns {Array<string>|null} An array of department IDs, or null if 'All' is selected.
+ */
 function getSelectedShiftDepartmentIds() {
   const savedJSON = localStorage.getItem(SHIFTS_FILTER_KEY);
   if (!savedJSON) return null;
@@ -217,6 +280,9 @@ function getSelectedShiftDepartmentIds() {
   return (all && all.checked) ? null : selected;
 }
 
+/**
+ * Updates the text of the department filter dropdown button to reflect the current selection.
+ */
 function updateShiftDeptLabel() {
   const labelSpan = document.getElementById('shift-dept-text');
   if (!labelSpan) return;
@@ -231,6 +297,12 @@ function updateShiftDeptLabel() {
   }
 }
 
+// --- 6. CRUD AND RENDER FUNCTIONS ---
+
+/**
+ * Populates the shift template form with data for editing.
+ * @param {object} template - The shift template object to edit.
+ */
 export function populateShiftTemplateFormForEdit(template) {
     dom.editingShiftTemplateIdInput.value = template.id;
     dom.shiftTemplateNameInput.value = template.name;
@@ -247,6 +319,9 @@ export function populateShiftTemplateFormForEdit(template) {
     dom.cancelEditShiftTemplateBtn.style.display = 'inline-block';
 }
 
+/**
+ * Resets the shift template form to its default, empty state.
+ */
 export function resetShiftTemplateForm() {
     dom.editingShiftTemplateIdInput.value = '';
     dom.shiftTemplateNameInput.value = '';
@@ -263,6 +338,10 @@ export function resetShiftTemplateForm() {
     dom.cancelEditShiftTemplateBtn.style.display = 'none';
 }
 
+/**
+ * Deletes a shift template after user confirmation.
+ * @param {string} stId - The ID of the shift template to delete.
+ */
 export function deleteShiftTemplate(stId) {
     if (!confirm(`Are you sure you want to delete this shift template?`)) return;
     const updatedTemplates = shiftTemplates.filter(st => st.id !== stId);
@@ -275,6 +354,9 @@ export function deleteShiftTemplate(stId) {
     }
 }
 
+/**
+ * Handles the 'Save' button click for a shift template, either creating or updating.
+ */
 export function handleSaveShiftTemplate() {
     const name = dom.shiftTemplateNameInput.value.trim();
     const start = dom.shiftTemplateStartTimeInput.value;
@@ -312,17 +394,22 @@ export function handleSaveShiftTemplate() {
     resetShiftTemplateForm();
 }
 
+/**
+ * Renders the entire list of shift templates, grouped by department.
+ * This is the main rendering function for the "Shift Templates" tab.
+ */
 export function renderShiftTemplates() {
     if (!dom.shiftTemplateContainer) return;
     dom.shiftTemplateContainer.innerHTML = '';
     
-    resetShiftTemplateForm(); // Also initializes the form pills
+    resetShiftTemplateForm(); // Initialize the form pills.
 
     const selectedDeptIds = getSelectedShiftDepartmentIds();
     
     let filteredTemplates = shiftTemplates;
     const multiselectElement = document.getElementById('shift-dept-multiselect');
 
+    // Apply role-based filtering (Managers only see their departments).
     if (currentUser && currentUser.role === 'Manager') {
         const managerDepts = currentUser.managedDepartmentIds || [];
         filteredTemplates = filteredTemplates.filter(st => {
@@ -332,21 +419,27 @@ export function renderShiftTemplates() {
             multiselectElement.style.display = 'none';
         }
     } else {
+        // Apply department filter from the multi-select dropdown.
         if (multiselectElement) {
             multiselectElement.style.display = 'block';
         }
         if (selectedDeptIds !== null) {
             filteredTemplates = shiftTemplates.filter(st => {
-                const deptIds = st.departmentIds || [];
-                if (deptIds.length === 0) {
+                // --- FIX: This logic now correctly handles both string and array department IDs ---
+                // Normalize departmentId(s) to an array for consistent checking.
+                // This ensures templates created from custom shifts (with a single `departmentId`) are not missed.
+                const templateDepts = Array.isArray(st.departmentIds) ? st.departmentIds : (st.departmentId ? [st.departmentId] : []);
+                
+                if (templateDepts.length === 0) {
                     return selectedDeptIds.includes('_unassigned');
                 }
-                return deptIds.some(deptId => selectedDeptIds.includes(deptId));
+                return templateDepts.some(deptId => selectedDeptIds.includes(deptId));
             });
         }
     }
 
 
+    // Group templates by department for display.
     const groupedByDept = filteredTemplates.reduce((acc, template) => {
         const deptIds = template.departmentIds || [];
         if (deptIds.length === 0) {
@@ -368,6 +461,7 @@ export function renderShiftTemplates() {
         return acc;
     }, {});
 
+    // Sort templates within each group based on the selected sort mode.
     Object.values(groupedByDept).forEach(deptGroup => {
         deptGroup.templates.sort((a, b) => {
             if (sortMode === 'ST') {
@@ -384,6 +478,7 @@ export function renderShiftTemplates() {
         });
     });
 
+    // Sort the department groups themselves.
     const deptOrder = departments.map(d => d.id);
     const sortedDeptGroups = Object.keys(groupedByDept).sort((a,b) => {
         if (a === '_unassigned') return 1;
@@ -391,6 +486,7 @@ export function renderShiftTemplates() {
         return deptOrder.indexOf(a) - deptOrder.indexOf(b);
     });
 
+    // Create and append the final HTML structure.
     const gridContainer = document.createElement('div');
     gridContainer.className = 'template-grid-container';
 
