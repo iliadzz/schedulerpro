@@ -2,12 +2,11 @@
 
 import { setLanguage } from './i18n.js';
 import { HistoryManager } from './features/history.js';
-import { populateTimeSelectsForElements } from './utils.js';
+import { populateTimeSelectsForElements, getWeekRange } from './utils.js';
 import * as dom from './dom.js';
 import { setupAuthListeners } from './firebase/auth.js';
-// --- CHANGE: Import listener management functions from firestore.js ---
 import { initializeSync, initializeDataListeners, cleanupDataListeners } from './firebase/firestore.js';
-import { currentUser, weekStartsOn } from './state.js'; // Import weekStartsOn
+import { currentUser, currentViewDate } from './state.js';
 
 import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, handleSaveDepartment } from './ui/departments.js';
 import { renderRoles, resetRoleForm, handleSaveRole, populateRoleColorPalette, ensureRoleDeptMultiselect, populateRoleDeptCheckboxes } from './ui/roles.js';
@@ -18,91 +17,8 @@ import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFil
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
 
-// --- CHANGE: Flag to prevent the app from being initialized more than once per session ---
 let isAppInitialized = false;
 
-let weekPickerAltInstance = null;
-let copyWeekSourceDateInstance = null;
-
-window.reinitializeDatePickers = function () {
-  if (weekPickerAltInstance) weekPickerAltInstance.destroy();
-  if (copyWeekSourceDateInstance) copyWeekSourceDateInstance.destroy();
-
-  const dayMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-  const startDow = dayMap[weekStartsOn()] ?? 1; // default Monday
-  const locale = { firstDayOfWeek: startDow };
-
-  // helper to compute week start/end for a given date and current startDow
-  const getWeekBounds = (date) => {
-    const d = new Date(date);
-    const shift = (d.getDay() - startDow + 7) % 7;
-    const start = new Date(d); start.setDate(d.getDate() - shift);
-    const end = new Date(start); end.setDate(start.getDate() + 6);
-    return { start, end };
-  };
-
-  const labelWeek = ({ start, end }) => {
-    const fmt = (dt) => dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-    return `${fmt(start)} – ${fmt(end)}`;
-  };
-
-  // ------------- Scheduler week picker -------------
-  weekPickerAltInstance = flatpickr(document.getElementById('week-picker-alt'), {
-    locale,
-    allowInput: false,
-    altInput: true,
-    // We'll override the visible label ourselves:
-    altFormat: "J",
-    dateFormat: "Y-m-d", // keep ISO for your existing handlers
-    plugins: [ weekSelect({}) ],
-    onReady: function (selectedDates, dateStr, fp) {
-      // If there is a current view date, show its week range
-      const base = selectedDates[0] || new Date();
-      const bounds = getWeekBounds(base);
-      if (fp.altInput) fp.altInput.value = labelWeek(bounds);
-    },
-    onChange: function (selectedDates, dateStr, fp) {
-      if (!selectedDates[0]) return;
-      const bounds = getWeekBounds(selectedDates[0]);
-
-      // Update the displayed label to "Sun 10 – Sat 16"
-      if (fp.altInput) fp.altInput.value = labelWeek(bounds);
-
-      // Keep the underlying input value as the week-start (ISO), so your code can read it consistently
-      fp.input.value = bounds.start.toISOString().slice(0, 10);
-
-      // If you already navigate on change, great; otherwise you can call your existing function here:
-      // e.g. window.goToWeek(bounds.start) or trigger whatever you use to render that week.
-      if (window.renderWeeklySchedule) window.renderWeeklySchedule(bounds.start);
-    }
-  });
-
-  // ------------- Copy-Week "Source Week" picker -------------
-  copyWeekSourceDateInstance = flatpickr(document.getElementById('copy-week-source-date'), {
-    locale,
-    allowInput: false,
-    altInput: true,
-    altFormat: "J",
-    dateFormat: "Y-m-d",
-    plugins: [ weekSelect({}) ],
-    onReady: function (selectedDates, dateStr, fp) {
-      const base = selectedDates[0] || new Date();
-      const bounds = getWeekBounds(base);
-      if (fp.altInput) fp.altInput.value = labelWeek(bounds);
-    },
-    onChange: function (selectedDates, dateStr, fp) {
-      if (!selectedDates[0]) return;
-      const bounds = getWeekBounds(selectedDates[0]);
-      if (fp.altInput) fp.altInput.value = labelWeek(bounds);
-
-      // For the modal logic that reads this value, store the START of the selected week
-      fp.input.value = bounds.start.toISOString().slice(0, 10);
-    }
-  });
-};
-/**
- * Resets the initialization flag when a user logs out. This is exported so auth.js can call it.
- */
 export function resetAppInitialization() {
     isAppInitialized = false;
 }
@@ -112,30 +28,74 @@ export function applyRbacPermissions() {
         document.documentElement.dataset.role = 'User'; // Default to most restrictive
         return;
     }
-    // Set the data-role attribute on the HTML tag based on the user's role claim.
     const role = currentUser.claims.role || 'User';
-    document.documentElement.dataset.role = role.replace(/\s+/g, '-'); // e.g., "General Manager" -> "General-Manager"
+    document.documentElement.dataset.role = role.replace(/\s+/g, '-');
 }
 
 
 // --- Application Entry Point ---
 window.__startApp = function() {
-    // --- CHANGE: Guard to ensure this entire initialization function only runs once. ---
     if (isAppInitialized) {
         console.log("Application already initialized. Skipping...");
         return;
     }
     console.log("DOM and Auth ready. Initializing application...");
 
-    // Initialize Firestore listeners first to ensure data is available
     initializeDataListeners();
-
-    // Then initialize the sync mechanism that intercepts localStorage.setItem
     initializeSync();
 
-    // --- NEW: Initialize the custom date picker ---
-    window.reinitializeDatePickers();
-    // --- END NEW ---
+    // --- NEW: Vanilla Calendar Pro Initialization ---
+    const weekPickerBtn = document.getElementById('date-picker-trigger-btn');
+    const weekPickerContainer = document.getElementById('date-picker-container');
+
+    const updatePickerButtonText = (date) => {
+        const week = getWeekRange(date);
+        const fmt = (dt) => dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        weekPickerBtn.textContent = `${fmt(week.start)} – ${fmt(week.end)}`;
+    };
+
+    const calendar = new VanillaCalendar(weekPickerContainer, {
+        type: 'default',
+        actions: {
+            clickDay(event, self) {
+                const selectedDateStr = self.selectedDates[0];
+                if (selectedDateStr) {
+                    handleWeekChange({ target: { value: selectedDateStr } });
+                    updatePickerButtonText(new Date(selectedDateStr));
+                    calendar.hide();
+                }
+            },
+        },
+        settings: {
+            iso8601: true, // Week starts on Monday
+            visibility: {
+                theme: 'light',
+                alwaysVisible: false,
+            },
+            selection: {
+                day: 'single',
+            },
+            selected: {
+                dates: [currentViewDate.toISOString().substring(0, 10)],
+            }
+        },
+    });
+    calendar.init();
+    calendar.hide(); // Start hidden
+
+    weekPickerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        calendar.show();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!weekPickerContainer.contains(e.target) && e.target !== weekPickerBtn) {
+            calendar.hide();
+        }
+    });
+
+    updatePickerButtonText(currentViewDate);
+    // --- END: Vanilla Calendar Initialization ---
 
     populateRoleColorPalette();
     populateTimeSelectsForElements(dom.customShiftStartHourSelect, dom.customShiftStartMinuteSelect);
@@ -207,7 +167,10 @@ window.__startApp = function() {
     dom.prevWeekBtn.addEventListener('click', handlePrevWeek);
     dom.nextWeekBtn.addEventListener('click', handleNextWeek);
     dom.thisWeekBtn.addEventListener('click', handleThisWeek);
-    dom.weekPickerAlt.addEventListener('change', handleWeekChange);
+    
+    const copyWeekSourceDate = document.getElementById('copy-week-source-date');
+    if (copyWeekSourceDate) copyWeekSourceDate.addEventListener('change', handleWeekChange);
+
     dom.printScheduleBtn.addEventListener('click', handlePrint);
 
     const openCopyWeekModalBtn = document.getElementById('open-copy-week-modal-btn');
@@ -263,7 +226,6 @@ window.__startApp = function() {
         }
     });
     
-    // --- CHANGE: Add listener to clean up Firestore subscriptions when the user closes the tab. ---
     window.addEventListener('beforeunload', () => {
         cleanupDataListeners();
         console.log("Firestore listeners cleaned up on tab close.");
@@ -284,7 +246,6 @@ window.__startApp = function() {
       document.querySelector('.tab-link[data-tab="scheduler-tab"]')?.click();
     }
     
-    // --- CHANGE: Set the flag to true after the first successful initialization ---
     isAppInitialized = true; 
 }
 
