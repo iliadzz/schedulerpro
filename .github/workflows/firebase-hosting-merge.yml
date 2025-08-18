@@ -12,10 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # New step to create the firebase-config.js file from the secret
+      # CORRECTED: This step now reliably writes the secret to the config file
       - name: Create Firebase Config
-        run: echo "${{ secrets.FIREBASE_CONFIG_JS_CONTENT }}" > public/js/firebase/firebase-config.js
-
+        run: |
+          echo "${{ secrets.FIREBASE_CONFIG_JS_CONTENT }}" > public/js/firebase/firebase-config.js
+        
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

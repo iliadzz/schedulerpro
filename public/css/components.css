@@ -328,3 +328,38 @@ ul li .item-actions button {
     background-color: #3498db;
     color: white;
 }
+
+/* Make the week picker look like our blue buttons */
+#week-picker-alt {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  
+  /* Use the same variables as your other buttons for consistency */
+  background-color: #3498db;
+  color: #fff;
+  border: 1px solid transparent;
+  border-radius: var(--ctl-radius);
+  padding: var(--ctl-py) var(--ctl-px);
+  font-size: var(--ctl-fs);
+  line-height: var(--ctl-lh);
+  
+  /* Ensure proper alignment and font */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#week-picker-alt:hover {
+  background-color: #2980b9; /* Match button hover color */
+}
+
+/* Ensure the calendar icon stays visible on the blue background */
+#week-picker-alt::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.9;
+  cursor: pointer;
+}
