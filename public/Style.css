@@ -1408,33 +1408,6 @@ ul li .item-actions button {
     padding: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-/* --- Time Picker Modal Styles --- */
-/* --- Rounded Rectangle Style for Date Picker --- */
-#week-picker-alt {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-color: #f8f9fa;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 0 10px;
-    height: 40px;
-    font-size: 0.95em;
-    font-weight: 500;
-    color: #495057;
-    cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
-}
-
-#week-picker-alt:hover {
-    background-color: #e9ecef;
-    border-color: #adb5bd;
-}
-
-#week-picker-alt::-webkit-calendar-picker-indicator {
-    cursor: pointer;
-    opacity: 0.6;
-}
 
 /* --- Right-align department and print buttons --- */
 #scheduler-department-filter-pills {
@@ -1476,56 +1449,3 @@ ul li .item-actions button {
     font-size: 12px;
     z-index: 1000;
 }
-}
-/* --- Updated Date Picker Style to Match Blue Buttons --- */
-#week-picker-alt {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    
-    /* Match button styling */
-    background-color: #3498db;
-    color: white;
-    border: 1px solid transparent;
-    border-radius: var(--ctl-radius); /* Use same border radius as buttons */
-    padding: var(--ctl-py) var(--ctl-px); /* Use same padding as buttons */
-    height: auto; /* Remove fixed height to let padding control it */
-    font-size: var(--ctl-fs); /* Use same font size as buttons */
-    line-height: var(--ctl-lh); /* Use same line height as buttons */
-    font-weight: normal;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match body font */
-    
-    cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
-    
-    /* Ensure it aligns properly with other controls */
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-}
-
-#week-picker-alt:hover {
-    background-color: #2980b9; /* Match button hover color */
-    border-color: #2980b9;
-}
-
-#week-picker-alt:focus {
-    outline: 2px solid #1d6fa5;
-    outline-offset: 2px;
-}
-
-/* Style the calendar picker indicator (dropdown arrow) */
-#week-picker-alt::-webkit-calendar-picker-indicator {
-    cursor: pointer;
-    opacity: 0.8;
-    color: white;
-    /* Try to make the calendar icon white - browser support varies */
-    filter: invert(1);
-}
-
-/* For Firefox */
-#week-picker-alt::-moz-calendar-picker-indicator {
-    cursor: pointer;
-    opacity: 0.8;
-    filter: invert(1);
