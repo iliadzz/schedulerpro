@@ -113,9 +113,20 @@ export function initSettingsTab() {
     // NEW: Set the value of the week start day selector
     const weekStartDaySelect = document.getElementById('week-start-day-select');
     if (weekStartDaySelect) {
+        // --- THIS IS THE FIX ---
+        // Add all days of the week as options
+        weekStartDaySelect.innerHTML = `
+            <option value="sun">Sunday</option>
+            <option value="mon">Monday</option>
+            <option value="tue">Tuesday</option>
+            <option value="wed">Wednesday</option>
+            <option value="thu">Thursday</option>
+            <option value="fri">Friday</option>
+            <option value="sat">Saturday</option>
+        `;
+        // --- END FIX ---
         weekStartDaySelect.value = restaurantSettings.weekStartDay || 'mon';
-    }
-
+        
     if (!restaurantHoursGrid) return;
     restaurantHoursGrid.innerHTML = '';
 
