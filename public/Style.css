@@ -1477,50 +1477,55 @@ ul li .item-actions button {
     z-index: 1000;
 }
 }
-/* --- Existing styles above remain unchanged --- */
-
-/* Replace the current #week-picker-alt with this */
-.scheduler-controls #week-picker-alt {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-
-  background-color: #3498db;           /* same as buttons */
-  color: #fff;                          /* white text (browser permitting) */
-  border: 1px solid transparent;
-  border-radius: var(--ctl-radius);     /* same rounding */
-  font-size: var(--ctl-fs);             /* same size as buttons */
-  line-height: var(--ctl-lh);
-  padding: var(--ctl-py) var(--ctl-px); /* same height/spacing as buttons */
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: normal;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  cursor: pointer;
-  transition: background-color 0.2s;
+/* --- Updated Date Picker Style to Match Blue Buttons --- */
+#week-picker-alt {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    
+    /* Match button styling */
+    background-color: #3498db;
+    color: white;
+    border: 1px solid transparent;
+    border-radius: var(--ctl-radius); /* Use same border radius as buttons */
+    padding: var(--ctl-py) var(--ctl-px); /* Use same padding as buttons */
+    height: auto; /* Remove fixed height to let padding control it */
+    font-size: var(--ctl-fs); /* Use same font size as buttons */
+    line-height: var(--ctl-lh); /* Use same line height as buttons */
+    font-weight: normal;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match body font */
+    
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    
+    /* Ensure it aligns properly with other controls */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
-.scheduler-controls #week-picker-alt:hover {
-  background-color: #2980b9;            /* same hover as buttons */
+#week-picker-alt:hover {
+    background-color: #2980b9; /* Match button hover color */
+    border-color: #2980b9;
 }
 
-/* Ensure the calendar icon stays visible on dark bg (Chromium/WebKit) */
-.scheduler-controls #week-picker-alt::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.2);
-  opacity: 0.9;
-  cursor: pointer;
+#week-picker-alt:focus {
+    outline: 2px solid #1d6fa5;
+    outline-offset: 2px;
 }
 
-
-.scheduler-controls #week-picker-alt:hover {
-  background-color: #2980b9;            /* same hover as buttons */
+/* Style the calendar picker indicator (dropdown arrow) */
+#week-picker-alt::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.8;
+    color: white;
+    /* Try to make the calendar icon white - browser support varies */
+    filter: invert(1);
 }
 
-/* Ensure the calendar icon stays visible on dark bg (Chromium/WebKit) */
-.scheduler-controls #week-picker-alt::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.2);
-  opacity: 0.9;
-  cursor: pointer;
-}
+/* For Firefox */
+#week-picker-alt::-moz-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.8;
+    filter: invert(1);
