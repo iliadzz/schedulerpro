@@ -69,4 +69,4 @@ node_modules/
 .dataconnect
 
 # Firebase config file
-# public/js/firebase/firebase-config.js
+public/js/firebase/firebase-config.js
