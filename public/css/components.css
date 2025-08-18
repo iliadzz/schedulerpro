@@ -356,13 +356,16 @@ ul li .item-actions button {
  * -------------------------------------------------------------------
  */
 
-/* Target the input created by Flatpickr and make it look like our buttons */
+/* Target the input created by Flatpickr within the scheduler controls.
+  This is more specific than the default Flatpickr CSS, ensuring our styles win.
+*/
 .scheduler-controls .flatpickr-input {
+  /* Reset the appearance to allow custom styling */
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
 
-  /* Use the same variables as your other buttons for consistency */
+  /* Use the same CSS variables as your other buttons for perfect consistency */
   background-color: #3498db;
   color: #fff;
   border: 1px solid transparent;
@@ -370,25 +373,18 @@ ul li .item-actions button {
   padding: var(--ctl-py) var(--ctl-px);
   font-size: var(--ctl-fs);
   line-height: var(--ctl-lh);
-  font-weight: normal; /* Ensure text isn't bold like some buttons */
+  font-weight: normal; /* Buttons are bold, but input text shouldn't be */
 
-  /* Ensure proper alignment and font */
+  /* Ensure proper alignment and box model */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   cursor: pointer;
   transition: background-color 0.2s;
-  box-sizing: border-box; /* Add this to ensure padding is included correctly */
+  box-sizing: border-box; /* This is crucial for consistent height */
 }
 
 .scheduler-controls .flatpickr-input:hover {
   background-color: #2980b9; /* Match button hover color */
-}
-
-/* Style the calendar icon to be visible on the blue background */
-.scheduler-controls .flatpickr-input::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  opacity: 0.9;
-  cursor: pointer;
 }
