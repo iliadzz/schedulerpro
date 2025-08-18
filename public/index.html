@@ -61,7 +61,10 @@
                     <button id="this-week-btn" data-lang-key="btnThisWeek"><i class="fas fa-calendar-day"></i> This Week</button>
                     <button id="prev-week-btn" data-lang-key="btnPrevWeek"><i class="fas fa-arrow-left"></i> Prev</button>
                     <button id="next-week-btn" data-lang-key="btnNextWeek">Next <i class="fas fa-arrow-right"></i></button>
-                    <input type="date" id="week-picker-alt" title="Go to week containing this date">
+                    
+                    <div class="flatpickr-wrapper">
+                        <input type="date" id="week-picker-alt" title="Go to week containing this date">
+                    </div>
                     
                     <button id="open-copy-week-modal-btn" class="manager-only" data-lang-key="btnCopyWeek"><i class="fas fa-copy"></i> Copy</button>
                     <button id="manage-events-btn" class="manager-only" data-lang-key="btnManageEvents">Events</button>
@@ -650,6 +653,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=1.1.19"></script>
+    <script type="module" src="js/main.js?v=1.1.20"></script>
 </body>
 </html>
