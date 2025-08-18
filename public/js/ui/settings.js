@@ -126,7 +126,8 @@ export function initSettingsTab() {
         `;
         // --- END FIX ---
         weekStartDaySelect.value = restaurantSettings.weekStartDay || 'mon';
-        
+    }
+
     if (!restaurantHoursGrid) return;
     restaurantHoursGrid.innerHTML = '';
 
