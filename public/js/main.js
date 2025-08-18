@@ -24,23 +24,82 @@ let isAppInitialized = false;
 let weekPickerAltInstance = null;
 let copyWeekSourceDateInstance = null;
 
-window.reinitializeDatePickers = function() {
-    if (weekPickerAltInstance) {
-        weekPickerAltInstance.destroy();
+window.reinitializeDatePickers = function () {
+  if (weekPickerAltInstance) weekPickerAltInstance.destroy();
+  if (copyWeekSourceDateInstance) copyWeekSourceDateInstance.destroy();
+
+  const dayMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+  const startDow = dayMap[weekStartsOn()] ?? 1; // default Monday
+  const locale = { firstDayOfWeek: startDow };
+
+  // helper to compute week start/end for a given date and current startDow
+  const getWeekBounds = (date) => {
+    const d = new Date(date);
+    const shift = (d.getDay() - startDow + 7) % 7;
+    const start = new Date(d); start.setDate(d.getDate() - shift);
+    const end = new Date(start); end.setDate(start.getDate() + 6);
+    return { start, end };
+  };
+
+  const labelWeek = ({ start, end }) => {
+    const fmt = (dt) => dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    return `${fmt(start)} – ${fmt(end)}`;
+  };
+
+  // ------------- Scheduler week picker -------------
+  weekPickerAltInstance = flatpickr(document.getElementById('week-picker-alt'), {
+    locale,
+    allowInput: false,
+    altInput: true,
+    // We'll override the visible label ourselves:
+    altFormat: "J",
+    dateFormat: "Y-m-d", // keep ISO for your existing handlers
+    plugins: [ weekSelect({}) ],
+    onReady: function (selectedDates, dateStr, fp) {
+      // If there is a current view date, show its week range
+      const base = selectedDates[0] || new Date();
+      const bounds = getWeekBounds(base);
+      if (fp.altInput) fp.altInput.value = labelWeek(bounds);
+    },
+    onChange: function (selectedDates, dateStr, fp) {
+      if (!selectedDates[0]) return;
+      const bounds = getWeekBounds(selectedDates[0]);
+
+      // Update the displayed label to "Sun 10 – Sat 16"
+      if (fp.altInput) fp.altInput.value = labelWeek(bounds);
+
+      // Keep the underlying input value as the week-start (ISO), so your code can read it consistently
+      fp.input.value = bounds.start.toISOString().slice(0, 10);
+
+      // If you already navigate on change, great; otherwise you can call your existing function here:
+      // e.g. window.goToWeek(bounds.start) or trigger whatever you use to render that week.
+      if (window.renderWeeklySchedule) window.renderWeeklySchedule(bounds.start);
     }
-    if (copyWeekSourceDateInstance) {
-        copyWeekSourceDateInstance.destroy();
+  });
+
+  // ------------- Copy-Week "Source Week" picker -------------
+  copyWeekSourceDateInstance = flatpickr(document.getElementById('copy-week-source-date'), {
+    locale,
+    allowInput: false,
+    altInput: true,
+    altFormat: "J",
+    dateFormat: "Y-m-d",
+    plugins: [ weekSelect({}) ],
+    onReady: function (selectedDates, dateStr, fp) {
+      const base = selectedDates[0] || new Date();
+      const bounds = getWeekBounds(base);
+      if (fp.altInput) fp.altInput.value = labelWeek(bounds);
+    },
+    onChange: function (selectedDates, dateStr, fp) {
+      if (!selectedDates[0]) return;
+      const bounds = getWeekBounds(selectedDates[0]);
+      if (fp.altInput) fp.altInput.value = labelWeek(bounds);
+
+      // For the modal logic that reads this value, store the START of the selected week
+      fp.input.value = bounds.start.toISOString().slice(0, 10);
     }
-
-    const dayMap = { 'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6 };
-    const locale = {
-        firstDayOfWeek: dayMap[weekStartsOn()] || 1
-    };
-
-    weekPickerAltInstance = flatpickr(dom.weekPickerAlt, { locale: locale, dateFormat: "Y-m-d" });
-    copyWeekSourceDateInstance = flatpickr(document.getElementById('copy-week-source-date'), { locale: locale, dateFormat: "Y-m-d" });
-}
-
+  });
+};
 /**
  * Resets the initialization flag when a user logs out. This is exported so auth.js can call it.
  */
