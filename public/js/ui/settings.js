@@ -204,6 +204,9 @@ export function handleSaveSettings() {
     restaurantSettings.minMealCoverageDuration = minMealCoverageDurationSelect.value;
 
     saveRestaurantSettings(); // Saves the updated object to localStorage
+    if (window.reinitializeDatePickers) {
+        window.reinitializeDatePickers();
+    }
     renderWeeklySchedule(); // Re-render schedule to reflect new coverage rules
     alert('Restaurant settings saved!');
 }

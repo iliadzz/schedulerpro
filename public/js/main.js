@@ -21,6 +21,26 @@ import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners
 // --- CHANGE: Flag to prevent the app from being initialized more than once per session ---
 let isAppInitialized = false;
 
+let weekPickerAltInstance = null;
+let copyWeekSourceDateInstance = null;
+
+window.reinitializeDatePickers = function() {
+    if (weekPickerAltInstance) {
+        weekPickerAltInstance.destroy();
+    }
+    if (copyWeekSourceDateInstance) {
+        copyWeekSourceDateInstance.destroy();
+    }
+
+    const dayMap = { 'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6 };
+    const locale = {
+        firstDayOfWeek: dayMap[weekStartsOn()] || 1
+    };
+
+    weekPickerAltInstance = flatpickr(dom.weekPickerAlt, { locale: locale, dateFormat: "Y-m-d" });
+    copyWeekSourceDateInstance = flatpickr(document.getElementById('copy-week-source-date'), { locale: locale, dateFormat: "Y-m-d" });
+}
+
 /**
  * Resets the initialization flag when a user logs out. This is exported so auth.js can call it.
  */
@@ -55,14 +75,7 @@ window.__startApp = function() {
     initializeSync();
 
     // --- NEW: Initialize the custom date picker ---
-    const dayMap = { 'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6 };
-    const locale = {
-        firstDayOfWeek: dayMap[weekStartsOn()] || 1 // Get start day from state, default to Monday
-    };
-
-    // Attach flatpickr to our existing input elements
-    flatpickr(dom.weekPickerAlt, { locale: locale, dateFormat: "Y-m-d" });
-    flatpickr(document.getElementById('copy-week-source-date'), { locale: locale, dateFormat: "Y-m-d" });
+    window.reinitializeDatePickers();
     // --- END NEW ---
 
     populateRoleColorPalette();
