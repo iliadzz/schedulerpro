@@ -305,28 +305,6 @@ ul li .item-actions button {
     background-color: white;
 }
 
-.scheduler-controls .flatpickr-input {
-    background-color: #3498db;
-    color: white;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    font-size: var(--ctl-fs);
-    line-height: var(--ctl-lh);
-    padding: var(--ctl-py) var(--ctl-px);
-    border-radius: var(--ctl-radius);
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: normal;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.scheduler-controls .flatpickr-input:hover {
-    background-color: #2980b9;
-}
-
 
 /* --- Multi-select Dropdown Styles --- */
 .multiselect {
