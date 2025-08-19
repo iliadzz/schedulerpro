@@ -107,7 +107,7 @@ window.reinitializeDatePickers = function() {
     }
 
 
-    
+
 
     const startMap = { sun: 7, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
     const startDayKey = weekStartsOn();
@@ -116,7 +116,8 @@ window.reinitializeDatePickers = function() {
     const calendar = new VanillaCalendar(weekPickerContainer, {
         firstWeekday: firstWeekday,
 
-        onClickDate: function () {
+        onClickDate: function (self, event) {
+            if (event) event.stopPropagation();
             var selectedDateStr = (calendar && calendar.context && calendar.context.selectedDates && calendar.context.selectedDates[0]) || null;
             if (selectedDateStr) {
                 var d = new Date(selectedDateStr + 'T00:00:00');
@@ -139,11 +140,13 @@ window.reinitializeDatePickers = function() {
             }
         },
 
-        onClickMonth: (self) => {
+        onClickMonth: (self, event) => {
+            event.stopPropagation();
             self.set({ type: 'default' }); // Switch back to day view
         },
 
-        onClickYear: (self) => {
+        onClickYear: (self, event) => {
+            event.stopPropagation();
             self.set({ type: 'month' }); // Switch to month view for the new year
         },
 
@@ -163,7 +166,7 @@ window.reinitializeDatePickers = function() {
     updatePickerButtonText(currentViewDate);
     calendar.hide();
     if (weekPickerContainer) weekPickerContainer.style.display = 'none';
-    window.vanillaCalendar = calendar; 
+    window.vanillaCalendar = calendar;
 
     if (weekPickerBtn) {
         weekPickerBtn.addEventListener('click', (e) => {
@@ -181,7 +184,7 @@ window.reinitializeDatePickers = function() {
             if (weekPickerContainer) weekPickerContainer.style.display = 'none';
         }
     });
-    
+
     updatePickerButtonText(currentViewDate);
 };
 
@@ -195,7 +198,7 @@ window.__startApp = function() {
 
     initializeDataListeners();
     initializeSync();
-    
+
     window.reinitializeDatePickers();
 
     populateRoleColorPalette();
@@ -268,7 +271,7 @@ window.__startApp = function() {
     dom.prevWeekBtn.addEventListener('click', handlePrevWeek);
     dom.nextWeekBtn.addEventListener('click', handleNextWeek);
     dom.thisWeekBtn.addEventListener('click', handleThisWeek);
-    
+
     const copyWeekSourceDate = document.getElementById('copy-week-source-date');
     if (copyWeekSourceDate) copyWeekSourceDate.addEventListener('change', handleWeekChange);
 
@@ -326,7 +329,7 @@ window.__startApp = function() {
             roleColorPopup.style.display = 'none';
         }
     });
-    
+
     window.addEventListener('beforeunload', () => {
         cleanupDataListeners();
         console.log("Firestore listeners cleaned up on tab close.");
@@ -345,8 +348,8 @@ window.__startApp = function() {
     } else {
       document.querySelector('.tab-link[data-tab="scheduler-tab"]')?.click();
     }
-    
-    isAppInitialized = true; 
+
+    isAppInitialized = true;
 }
 
 // --- Initialize Auth ---
