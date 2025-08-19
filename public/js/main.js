@@ -15,8 +15,8 @@ import { renderWeeklySchedule, handlePrevWeek, handleNextWeek, handleThisWeek, h
 import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFile } from './ui/settings.js';
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
-// --- FIX: Use a default import for VanillaCalendar ---
-import VanillaCalendar from '../vendor/Vanilla-calendar/index.mjs';
+// --- FIX: Use a named import (Calendar) and alias it to VanillaCalendar ---
+import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mjs';
 
 let isAppInitialized = false;
 
