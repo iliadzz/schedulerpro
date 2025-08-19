@@ -170,4 +170,4 @@ export {
     DEFAULT_VACATION_DAYS,
     EVENT_COLORS,
     terminationReasons
-};};
+};

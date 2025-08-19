@@ -2,6 +2,7 @@
 
 // --- Import the new employeeDisplayFormat state variable ---
 import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate,  setCurrentViewDate, currentUser, saveScheduleAssignments, departments, employeeDisplayFormat, weekStartsOn} from '../state.js';
+import { setCurrentViewDate } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { formatDate, getWeekRange, getDatesOfWeek, formatTimeForDisplay, calculateShiftDuration, getContrastColor, generateId } from '../utils.js';
