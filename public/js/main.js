@@ -114,27 +114,36 @@ window.reinitializeDatePickers = function() {
     const firstWeekday = startMap[startDayKey] || 1;
 
     const calendar = new VanillaCalendar(weekPickerContainer, {
-    firstWeekday: firstWeekday,
+        firstWeekday: firstWeekday,
 
-    onClickDate: function () {
-        var selectedDateStr = (calendar && calendar.context && calendar.context.selectedDates && calendar.context.selectedDates[0]) || null;
-        if (selectedDateStr) {
-            var d = new Date(selectedDateStr + 'T00:00:00');
-            window.highlightWeekInCalendar(calendar, d, weekStartsOn());
-            window.updateWeekBadge(weekPickerContainer, d);
-            handleWeekChange({ target: { value: selectedDateStr } });
-            window.updatePickerButtonText(new Date(selectedDateStr));
-            calendar.hide();
-            if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
+        onClickDate: function () {
+            var selectedDateStr = (calendar && calendar.context && calendar.context.selectedDates && calendar.context.selectedDates[0]) || null;
+            if (selectedDateStr) {
+                var d = new Date(selectedDateStr + 'T00:00:00');
+                window.highlightWeekInCalendar(calendar, d, weekStartsOn());
+                window.updateWeekBadge(weekPickerContainer, d);
+                handleWeekChange({ target: { value: selectedDateStr } });
+                window.updatePickerButtonText(new Date(selectedDateStr));
+                calendar.hide();
+                if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
+            }
+        },
+
+        onClickTitle: (self, event) => {
+            const target = event.target;
+            if (target.closest('[data-vc="month"]')) {
+                self.set({ type: 'month' });
+            } else if (target.closest('[data-vc="year"]')) {
+                self.set({ type: 'year' });
+            }
+        },
+
+        settings: {
+            visibility: { theme: 'light', alwaysVisible: false },
+            selection: { day: 'single' },
+            selected: { dates: [ currentViewDate.toISOString().substring(0, 10) ] }
         }
-    },
-
-    settings: {
-        visibility: { theme: 'light', alwaysVisible: false },
-        selection: { day: 'single' },
-        selected: { dates: [ currentViewDate.toISOString().substring(0, 10) ] }
-    }
-});
+    });
 
     calendar.init();
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
