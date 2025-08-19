@@ -130,12 +130,21 @@ window.reinitializeDatePickers = function() {
         },
 
         onClickTitle: (self, event) => {
+            event.stopPropagation(); // Prevents the calendar from closing
             const target = event.target;
             if (target.closest('[data-vc="month"]')) {
                 self.set({ type: 'month' });
             } else if (target.closest('[data-vc="year"]')) {
                 self.set({ type: 'year' });
             }
+        },
+
+        onClickMonth: (self) => {
+            self.set({ type: 'default' }); // Switch back to day view
+        },
+
+        onClickYear: (self) => {
+            self.set({ type: 'month' }); // Switch to month view for the new year
         },
 
         settings: {
