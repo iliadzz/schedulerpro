@@ -129,21 +129,6 @@ window.reinitializeDatePickers = function() {
         }
     },
 
-    actions: {
-        clickDay: function (event, self) {
-            var selectedDateStr = (self && self.context && self.context.selectedDates && self.context.selectedDates[0]) || null;
-            if (selectedDateStr) {
-                var d = new Date(selectedDateStr + 'T00:00:00');
-                window.highlightWeekInCalendar(calendar, d, weekStartsOn());
-                window.updateWeekBadge(weekPickerContainer, d);
-                handleWeekChange({ target: { value: selectedDateStr } });
-                window.updatePickerButtonText(new Date(selectedDateStr));
-                calendar.hide();
-                if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
-            }
-        }
-    },
-
     settings: {
         visibility: { theme: 'light', alwaysVisible: false },
         selection: { day: 'single' },
