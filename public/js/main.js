@@ -134,6 +134,7 @@ window.reinitializeDatePickers = function() {
           },  // <-- IMPORTANT: comma after actions
 
         onClickTitle: (self, event) => {
+            vcLog('⏫ onClickTitle fired');
             event.stopPropagation();
             const target = event.target;
             if (target.closest('[data-vc="month"]')) {
@@ -160,7 +161,23 @@ window.reinitializeDatePickers = function() {
         }
     });
 
-    calendar.init();
+    
+    // Safety net: header month/year click handler in capture phase
+    try {
+        const hdr = weekPickerContainer?.querySelector('.vc-header');
+        if (hdr) {
+            hdr.addEventListener('click', (e) => {
+                if (e.target.closest('[data-vc="month"]')) {
+                    vcLog('🛟 Fallback header month click');
+                    try { calendar.set({ type: 'month' }); } catch (err) { vcWarn('fallback month set failed', err); }
+                } else if (e.target.closest('[data-vc="year"]')) {
+                    vcLog('🛟 Fallback header year click');
+                    try { calendar.set({ type: 'year' }); } catch (err) { vcWarn('fallback year set failed', err); }
+                }
+            }, true);
+        }
+    } catch (e) { vcWarn('header fallback attach failed', e); }
+calendar.init();
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
     window.updateWeekBadge(weekPickerContainer, currentViewDate);
     window.window.updatePickerButtonText(currentViewDate);
