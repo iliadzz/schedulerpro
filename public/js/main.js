@@ -110,24 +110,38 @@ window.reinitializeDatePickers = function() {
     const startDayKey = weekStartsOn();
     const firstWeekday = startMap[startDayKey] || 1;
 
-    const calendar = new VanillaCalendar(weekPickerContainer, {
+const calendar = new VanillaCalendar(weekPickerContainer, {
         firstWeekday: firstWeekday,
 
         onClickDate(self, event) {
-            const dateCell = event?.target?.closest('[data-vc-date]');
-            if (!dateCell) {
+            // Get the button that was clicked
+            const dateBtn = event?.target?.closest('button[data-vc-date-btn]');
+            if (!dateBtn) {
               return;
             }
-            const selectedDateStr = dateCell.dataset.vcDate; // YYYY-MM-DD
-            const [year, month, day] = selectedDateStr.split('-').map(Number);
-            const pickedDate = new Date(year, month - 1, day);
+            
+            // Get the aria-label which contains the full date (e.g., "August 19, 2025")
+            const ariaLabel = dateBtn.getAttribute('aria-label');
+            if (!ariaLabel) {
+              return;
+            }
+            
+            // Parse the date from the aria-label
+            const pickedDate = new Date(ariaLabel);
+            
+            // Validate the date
+            if (isNaN(pickedDate.getTime())) {
+              console.warn('Invalid date from aria-label:', ariaLabel);
+              return;
+            }
+            
             window.highlightWeekInCalendar(self, pickedDate, weekStartsOn());
             window.updateWeekBadge(weekPickerContainer, pickedDate);
             handleWeekChange(pickedDate);
             window.updatePickerButtonText(pickedDate);
             self.hide();
             if (weekPickerContainer) weekPickerContainer.style.display = 'none';
-          },  // <-- IMPORTANT: comma after actions
+          },
 
         onClickTitle: (self, event) => {
             event.stopPropagation();
