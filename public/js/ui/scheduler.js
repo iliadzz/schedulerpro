@@ -123,18 +123,6 @@ export function handleWeekChange(e) {
 
     setCurrentViewDate(startOfWeek);
     renderWeeklySchedule();
-} else if (e.target && e.target.value) {
-        // If it's an event from an input, parse it carefully to avoid timezone issues
-        const [year, month, day] = e.target.value.split('-').map(Number);
-        newDate = new Date(year, month - 1, day);
-    }
-
-    if (newDate && !isNaN(newDate)) {
-        currentViewDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
-        saveCurrentViewDate();
-        renderWeeklySchedule();
-    }
-}
 
 export function handlePrint() {
     window.print();
