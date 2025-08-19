@@ -114,14 +114,11 @@ window.reinitializeDatePickers = function() {
         firstWeekday: firstWeekday,
 
         onClickDate(self, event) {
-            console.log("✅ onClickDate fired", { self, event });
             const dateCell = event?.target?.closest('[data-vc-date]');
             if (!dateCell) {
-              console.warn("⚠️ No dateCell found", event?.target);
               return;
             }
             const selectedDateStr = dateCell.dataset.vcDate; // YYYY-MM-DD
-            console.log("📅 Selected date string:", selectedDateStr);
             const [year, month, day] = selectedDateStr.split('-').map(Number);
             const pickedDate = new Date(year, month - 1, day);
             window.highlightWeekInCalendar(self, pickedDate, weekStartsOn());
@@ -198,10 +195,8 @@ window.reinitializeDatePickers = function() {
 // --- Application Entry Point ---
 window.__startApp = function() {
     if (isAppInitialized) {
-        console.log("Application already initialized. Skipping...");
         return;
     }
-    console.log("DOM and Auth ready. Initializing application...");
 
     initializeDataListeners();
     initializeSync();
@@ -339,7 +334,6 @@ window.__startApp = function() {
 
     window.addEventListener('beforeunload', () => {
         cleanupDataListeners();
-        console.log("Firestore listeners cleaned up on tab close.");
     });
 
     document.querySelectorAll('.modal .close-modal-btn').forEach(btn => {
