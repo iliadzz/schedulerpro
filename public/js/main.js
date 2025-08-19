@@ -15,7 +15,6 @@ import { renderWeeklySchedule, handlePrevWeek, handleNextWeek, handleThisWeek, h
 import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFile } from './ui/settings.js';
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
-// --- FIX: Use a named import (Calendar) and alias it to VanillaCalendar ---
 import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mjs';
 
 let isAppInitialized = false;
@@ -51,54 +50,26 @@ window.reinitializeDatePickers = function() {
     const startDayKey = weekStartsOn();
     const firstWeekday = startMap[startDayKey] ?? 1;
 
-    let calendar;
-    
-    const isV3 = window.VanillaCalendarPro && window.VanillaCalendarPro.Calendar;
-    
-    if (isV3) {
-      const { Calendar } = window.VanillaCalendarPro;
-      calendar = new Calendar(weekPickerContainer, {
-        firstWeekday,
-        actions: {
-          clickDay(event, self) {
-            const selectedDateStr = self.selectedDates?.[0];
-            if (selectedDateStr) {
-              handleWeekChange({ target: { value: selectedDateStr } });
-              updatePickerButtonText(new Date(selectedDateStr));
-              calendar.hide();
-            }
+    const calendar = new VanillaCalendar(weekPickerContainer, {
+      firstWeekday,
+      actions: {
+        clickDay(event, self) {
+          const selectedDateStr = self.selectedDates?.[0];
+          if (selectedDateStr) {
+            handleWeekChange({ target: { value: selectedDateStr } });
+            updatePickerButtonText(new Date(selectedDateStr));
+            calendar.hide();
           }
-        },
-        settings: {
-             visibility: { theme: 'light', alwaysVisible: false },
-             selection: { day: 'single' },
-             selected: { dates: [currentViewDate.toISOString().substring(0, 10)] }
         }
-      });
-    } else {
-      calendar = new VanillaCalendar(weekPickerContainer, {
-        type: 'default',
-        actions: {
-          clickDay(event, self) {
-            const selectedDateStr = self.selectedDates[0];
-            if (selectedDateStr) {
-              handleWeekChange({ target: { value: selectedDateStr } });
-              updatePickerButtonText(new Date(selectedDateStr));
-              calendar.hide();
-            }
-          }
-        },
-        settings: {
-          iso8601: firstWeekday !== 0,
-          visibility: { theme: 'light', alwaysVisible: false },
-          selection: { day: 'single' },
-          selected: { dates: [currentViewDate.toISOString().substring(0, 10)] }
-        }
-      });
-    }
+      },
+      settings: {
+           visibility: { theme: 'light', alwaysVisible: false },
+           selection: { day: 'single' },
+           selected: { dates: [currentViewDate.toISOString().substring(0, 10)] }
+      }
+    });
 
     calendar.init();
-    calendar.hide();
     window.vanillaCalendar = calendar;
 
     if (weekPickerBtn) {
@@ -115,6 +86,7 @@ window.reinitializeDatePickers = function() {
     });
     
     updatePickerButtonText(currentViewDate);
+    calendar.hide();
 };
 
 // --- Application Entry Point ---
@@ -127,7 +99,7 @@ window.__startApp = function() {
 
     initializeDataListeners();
     initializeSync();
-
+    
     window.reinitializeDatePickers();
 
     populateRoleColorPalette();
