@@ -104,11 +104,7 @@ window.reinitializeDatePickers = function() {
     if (window.vanillaCalendar) {
         window.vanillaCalendar.destroy();
     }
-
-    function updatePickerButtonText(date) {
-        try {
-            var week = getWeekRange(date, weekStartsOn());
-            var fmt = function(dt){ return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }); };
+); };
             var label = fmt(week.start) + " – " + fmt(week.end);
             var btn = document.getElementById('date-picker-trigger-btn') || document.getElementById('week-picker-btn');
             if (btn) {
