@@ -19,9 +19,29 @@ import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mj
 
 // === Global Calendar Helpers (attached to window) =============================
 (function(){
-    function highlightWeekInCalendar(calendar, date, weekStartsOnKey) {
-        try {
-            var startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+    
+function highlightWeekInCalendar(calendar, date, weekStartsOnKey) {
+    try {
+        var startIdxMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+        var startIdx = startIdxMap[weekStartsOnKey] != null ? startIdxMap[weekStartsOnKey] : 1;
+        var base = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        var day = base.getDay();
+        var diff = (day - startIdx + 7) % 7;
+        var weekStart = new Date(base);
+        weekStart.setDate(base.getDate() - diff);
+        var weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        var iso = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().substring(0,10);
+        var from = iso(weekStart);
+        var to = iso(weekEnd);
+        if (calendar && typeof calendar.update === 'function') {
+            calendar.update({ settings: { selection: { day: 'range' } }, selected: { from: from, to: to } });
+        } else if (calendar && typeof calendar.set === 'function') {
+            calendar.set({ settings: { selection: { day: 'range' } }, selected: { from: from, to: to } });
+        }
+    } catch (err) { console.warn('Failed to highlight week as range:', err); }
+}
+;
             var startIdx = startMap[weekStartsOnKey] != null ? startMap[weekStartsOnKey] : 1;
             var base = new Date(date.getFullYear(), date.getMonth(), date.getDate());
             var day = base.getDay();
@@ -39,9 +59,9 @@ import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mj
                 dates.push(iso(d));
             }
             if (calendar && typeof calendar.update === 'function') {
-                calendar.update({ settings: { selection: { day: 'multiple' } }, selected: { dates: dates } });
+                calendar.update({ settings: { selection: { day: 'range' } }, selected: { dates: dates } });
             } else if (calendar && typeof calendar.set === 'function') {
-                calendar.set({ settings: { selection: { day: 'multiple' } }, selected: { dates: dates } });
+                calendar.set({ settings: { selection: { day: 'range' } }, selected: { dates: dates } });
             }
         } catch (err) { console.warn('highlightWeekInCalendar failed', err); }
     }
@@ -105,9 +125,9 @@ import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mj
                 dates.push(iso(d));
             }
             if (calendar && typeof calendar.update === 'function') {
-                calendar.update({ settings: { selection: { day: 'multiple' } }, selected: { dates: dates } });
+                calendar.update({ settings: { selection: { day: 'range' } }, selected: { dates: dates } });
             } else if (calendar && typeof calendar.set === 'function') {
-                calendar.set({ settings: { selection: { day: 'multiple' } }, selected: { dates: dates } });
+                calendar.set({ settings: { selection: { day: 'range' } }, selected: { dates: dates } });
             }
         } catch (err) { console.warn('highlightWeekInCalendar failed', err); }
     }
