@@ -6,7 +6,7 @@ import { populateTimeSelectsForElements, getWeekRange } from './utils.js';
 import * as dom from './dom.js';
 import { setupAuthListeners } from './firebase/auth.js';
 import { initializeSync, initializeDataListeners, cleanupDataListeners } from './firebase/firestore.js';
-import { currentUser, currentViewDate, weekStartsOn } from './state.js';
+import { currentUser, currentViewDate, weekStartsOn, setCurrentViewDate } from './state.js';
 import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, handleSaveDepartment } from './ui/departments.js';
 import { renderRoles, resetRoleForm, handleSaveRole, populateRoleColorPalette, ensureRoleDeptMultiselect, populateRoleDeptCheckboxes } from './ui/roles.js';
 import { renderEmployees, populateTerminationReasons, resetEmployeeForm, handleSaveEmployee, initEmployeeModalListeners } from './ui/employees.js';
@@ -113,51 +113,47 @@ window.reinitializeDatePickers = function() {
     const calendar = new VanillaCalendar(weekPickerContainer, {
         firstWeekday: firstWeekday,
 
-        onClickDate(self, event) {
-            const dateCell = event?.target?.closest('[data-vc-date]');
-            if (!dateCell) {
-              return;
-            }
-            const selectedDateStr = dateCell.dataset.vcDate; // YYYY-MM-DD
-            const [year, month, day] = selectedDateStr.split('-').map(Number);
-            const pickedDate = new Date(year, month - 1, day);
-            window.highlightWeekInCalendar(self, pickedDate, weekStartsOn());
-            window.updateWeekBadge(weekPickerContainer, pickedDate);
-            handleWeekChange(pickedDate);
-            window.updatePickerButtonText(pickedDate);
-            self.hide();
-            if (weekPickerContainer) weekPickerContainer.style.display = 'none';
-          },  // <-- IMPORTANT: comma after actions
+        actions: {
+            clickDay(self, event) {
+                const dateCell = event?.target?.closest('[data-vc-date]');
+                if (!dateCell) {
+                  return;
+                }
+                const selectedDateStr = dateCell.dataset.vcDate; // YYYY-MM-DD
+                const [year, month, day] = selectedDateStr.split('-').map(Number);
+                const pickedDate = new Date(year, month - 1, day);
+                window.highlightWeekInCalendar(self, pickedDate, weekStartsOn());
+                window.updateWeekBadge(weekPickerContainer, pickedDate);
+                handleWeekChange(pickedDate);
+                window.updatePickerButtonText(pickedDate);
+                self.hide();
+                if (weekPickerContainer) weekPickerContainer.style.display = 'none';
+              },
 
-        onClickTitle: (self, event) => {
-            event.stopPropagation();
-            const target = event.target;
-            if (target.closest('[data-vc="month"]')) {
+            clickMonth(self, event) {
+                event.stopPropagation();
+                const newMonth = self.context.selectedMonth;
+                const newYear = self.context.selectedYear;
+                const newDate = new Date(newYear, newMonth, 1);
+                setCurrentViewDate(newDate);
+                self.set({ type: 'default' });
+            },
+
+            clickYear(self, event) {
+                event.stopPropagation();
                 self.set({ type: 'month' });
-            } else if (target.closest('[data-vc="year"]')) {
-                self.set({ type: 'year' });
-            }
+            },
+
+            clickTitle(self, event) {
+                event.stopPropagation();
+                const target = event.target;
+                if (target.closest('[data-vc="month"]')) {
+                    self.set({ type: 'month' });
+                } else if (target.closest('[data-vc="year"]')) {
+                    self.set({ type: 'year' });
+                }
+            },
         },
-
-        onClickMonth: (self, event) => {
-            event.stopPropagation();
-            self.set({ type: 'default' });
-        },
-
-        onClickYear: (self, event) => {
-
-    const yearEl = event?.target?.closest('[data-vc-year]');
-    if (!yearEl) return;
-    const year = Number(yearEl.dataset.vcYear);
-    const month = (self?.context && typeof self.context.selectedMonth === 'number')
-      ? self.context.selectedMonth
-      : new Date().getMonth();
-    const dateStr = new Date(year, month, 1).toISOString().slice(0, 10);
-    // Update selected year (keeping current month), then switch to month picker.
-    self.set({ selected: { dates: [dateStr] } }, { dates: true, month: true, year: true });
-    self.set({ type: 'month' });
-
-  },
 
         settings: {
             visibility: { theme: 'light', alwaysVisible: false },
