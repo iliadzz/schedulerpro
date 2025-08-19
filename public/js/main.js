@@ -6,9 +6,7 @@ import { populateTimeSelectsForElements, getWeekRange } from './utils.js';
 import * as dom from './dom.js';
 import { setupAuthListeners } from './firebase/auth.js';
 import { initializeSync, initializeDataListeners, cleanupDataListeners } from './firebase/firestore.js';
-// --- FIX: Import currentUser, currentViewDate, and weekStartsOn from state ---
 import { currentUser, currentViewDate, weekStartsOn } from './state.js';
-
 import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, handleSaveDepartment } from './ui/departments.js';
 import { renderRoles, resetRoleForm, handleSaveRole, populateRoleColorPalette, ensureRoleDeptMultiselect, populateRoleDeptCheckboxes } from './ui/roles.js';
 import { renderEmployees, populateTerminationReasons, resetEmployeeForm, handleSaveEmployee, initEmployeeModalListeners } from './ui/employees.js';
@@ -17,6 +15,8 @@ import { renderWeeklySchedule, handlePrevWeek, handleNextWeek, handleThisWeek, h
 import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFile } from './ui/settings.js';
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
+// --- NEW: Import VanillaCalendar ---
+import VanillaCalendar from '../vendor/Vanilla-calendar/index.mjs';
 
 let isAppInitialized = false;
 
@@ -33,7 +33,6 @@ export function applyRbacPermissions() {
     document.documentElement.dataset.role = role.replace(/\s+/g, '-');
 }
 
-// --- THIS IS THE FIX ---
 // This function will re-initialize the calendar. It needs to be accessible globally.
 window.reinitializeDatePickers = function() {
     const weekPickerBtn = document.getElementById('date-picker-trigger-btn');
@@ -49,14 +48,12 @@ window.reinitializeDatePickers = function() {
         if (weekPickerBtn) weekPickerBtn.textContent = `${fmt(week.start)} – ${fmt(week.end)}`;
     };
 
-    // Map your saved setting -> day index (0=Sun .. 6=Sat)
     const startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-    const startDayKey = weekStartsOn(); // returns 'sun' | 'mon' | ...
-    const firstWeekday = startMap[startDayKey] ?? 1; // default Monday
+    const startDayKey = weekStartsOn();
+    const firstWeekday = startMap[startDayKey] ?? 1;
 
     let calendar;
     
-    // Try V3 (Calendar) first, fall back to V2 (VanillaCalendar)
     const isV3 = window.VanillaCalendarPro && window.VanillaCalendarPro.Calendar;
     
     if (isV3) {
@@ -80,7 +77,6 @@ window.reinitializeDatePickers = function() {
         }
       });
     } else {
-      // V2.x API
       calendar = new VanillaCalendar(weekPickerContainer, {
         type: 'default',
         actions: {
@@ -94,7 +90,7 @@ window.reinitializeDatePickers = function() {
           }
         },
         settings: {
-          iso8601: firstWeekday !== 0, // true => Monday first, false => Sunday first
+          iso8601: firstWeekday !== 0,
           visibility: { theme: 'light', alwaysVisible: false },
           selection: { day: 'single' },
           selected: { dates: [currentViewDate.toISOString().substring(0, 10)] }
@@ -104,7 +100,7 @@ window.reinitializeDatePickers = function() {
 
     calendar.init();
     calendar.hide();
-    window.vanillaCalendar = calendar; // Store instance globally to destroy it later
+    window.vanillaCalendar = calendar;
 
     if (weekPickerBtn) {
         weekPickerBtn.addEventListener('click', (e) => {
@@ -121,7 +117,6 @@ window.reinitializeDatePickers = function() {
     
     updatePickerButtonText(currentViewDate);
 };
-// --- END FIX ---
 
 
 // --- Application Entry Point ---
@@ -137,7 +132,6 @@ window.__startApp = function() {
 
     // --- NEW: Initialize Vanilla Calendar Pro ---
     window.reinitializeDatePickers();
-    // --- END: Vanilla Calendar Initialization ---
 
     populateRoleColorPalette();
     populateTimeSelectsForElements(dom.customShiftStartHourSelect, dom.customShiftStartMinuteSelect);
