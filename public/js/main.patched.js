@@ -24,6 +24,7 @@ function highlightWeekInCalendar(calendar, date, weekStartsOnKey) {
         const startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
         const startIdx = startMap[weekStartsOnKey] ?? 1;
         const base = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        // Compute start of week according to settings
         const day = base.getDay();
         const diff = (day - startIdx + 7) % 7;
         const weekStart = new Date(base);
@@ -35,70 +36,14 @@ function highlightWeekInCalendar(calendar, date, weekStartsOnKey) {
             d.setDate(weekStart.getDate() + i);
             dates.push(iso(d));
         }
-        applySelectedDates(calendar, dates);
+        // Switch to multiple-day selection and set all 7 dates
+        calendar.update({
+            settings: { selection: { day: 'multiple' } },
+            selected: { dates }
+        });
     } catch (err) {
         console.warn('Failed to highlight week in calendar:', err);
     }
-}
-
-/** Robustly apply selected dates across VCPro builds */
-function applySelectedDates(calendar, dates) {
-    try {
-        if (typeof calendar.update === 'function') {
-            calendar.update({ settings: { selection: { day: 'multiple' } }, selected: { dates } });
-            return;
-        }
-    } catch {}
-    try {
-        if (typeof calendar.set === 'function') {
-            calendar.set({ settings: { selection: { day: 'multiple' } }, selected: { dates } });
-        }
-    } catch (err) {
-        console.warn('Failed to set selected dates on calendar:', err);
-    }
-}
-
-// --- Week Badge (brand-styled) ------------------------------------------------
-function ensureWeekBadge(container) {
-    let badge = container.querySelector('#vc-week-badge');
-    if (!badge) {
-        badge = document.createElement('div');
-        badge.id = 'vc-week-badge';
-        badge.className = 'vc-week-badge';
-        badge.setAttribute('aria-live', 'polite');
-        container.insertAdjacentElement('afterbegin', badge);
-    }
-    if (!document.getElementById('vc-week-badge-style')) {
-        const st = document.createElement('style');
-        st.id = 'vc-week-badge-style';
-        st.textContent = `
-            .vc-week-badge{
-                font-size:.9rem;
-                font-weight:600;
-                margin-bottom:.5rem;
-                padding:.35rem .6rem;
-                border-radius:.6rem;
-                background:#3498db;
-                color:#fff;
-                display:inline-block;
-                box-shadow: 0 1px 3px rgba(0,0,0,.08);
-            }
-            @media (prefers-color-scheme: dark){
-                .vc-week-badge{ box-shadow: 0 1px 3px rgba(0,0,0,.35); }
-            }
-        `;
-        document.head.appendChild(st);
-    }
-    return badge;
-}
-function formatWeekRangeLabel(date){
-    const { start, end } = getWeekRange(date, weekStartsOn());
-    const fmt = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    return `${fmt(start)} – ${fmt(end)}`;
-}
-function updateWeekBadge(container, date){
-    const badge = ensureWeekBadge(container);
-    badge.textContent = formatWeekRangeLabel(date);
 }
 let isAppInitialized = false;
 
@@ -134,22 +79,21 @@ window.reinitializeDatePickers = function() {
     const firstWeekday = startMap[startDayKey] ?? 1;
 
     const calendar = new VanillaCalendar(weekPickerContainer, {
-        onClickDate() {
-            const selectedDateStr = (calendar && calendar.context && calendar.context.selectedDates || [])[0];
-            if (selectedDateStr) {
-                const d = new Date(selectedDateStr + 'T00:00:00');
-                highlightWeekInCalendar(calendar, d, weekStartsOn());
-                updateWeekBadge(weekPickerContainer, d);
-                // Update app state + grid
-                handleWeekChange({ target: { value: selectedDateStr } });
-                updatePickerButtonText(new Date(selectedDateStr));
-                calendar.hide();
-                if (weekPickerContainer) weekPickerContainer.style.display = 'none';
-            }
-        },
-
         firstWeekday,
-        
+        actions: {
+            clickDay(event, self) {
+                const selectedDateStr = self.context?.selectedDates?.[0];
+                if (selectedDateStr) {
+                    const d = new Date(selectedDateStr + 'T00:00:00');
+                    // Highlight the full week in the calendar UI
+                    highlightWeekInCalendar(calendar, d, weekStartsOn());
+                    // Update app state + grid
+                    handleWeekChange({ target: { value: selectedDateStr } });
+                    updatePickerButtonText(new Date(selectedDateStr));
+                    calendar.hide();
+                    if (weekPickerContainer) weekPickerContainer.style.display = 'none';
+                }
+            },
         },
         settings: {
              visibility: { theme: 'light', alwaysVisible: false },
@@ -159,8 +103,8 @@ window.reinitializeDatePickers = function() {
     });
 
     calendar.init();
+    // Pre-highlight the current week when opening
     highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
-    updateWeekBadge(weekPickerContainer, currentViewDate);
     calendar.hide();
     if (weekPickerContainer) weekPickerContainer.style.display = 'none';
     window.vanillaCalendar = calendar; 
@@ -169,7 +113,7 @@ window.reinitializeDatePickers = function() {
         weekPickerBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (weekPickerContainer) weekPickerContainer.style.display = 'block';
-            updateWeekBadge(weekPickerContainer, currentViewDate);
+            // Ensure current week is highlighted before showing
             highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
             calendar.show();
         });
