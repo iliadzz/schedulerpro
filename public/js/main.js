@@ -6,7 +6,8 @@ import { populateTimeSelectsForElements, getWeekRange } from './utils.js';
 import * as dom from './dom.js';
 import { setupAuthListeners } from './firebase/auth.js';
 import { initializeSync, initializeDataListeners, cleanupDataListeners } from './firebase/firestore.js';
-import { currentUser, currentViewDate } from './state.js';
+// --- FIX: Import currentUser, currentViewDate, and weekStartsOn from state ---
+import { currentUser, currentViewDate, weekStartsOn } from './state.js';
 
 import { initializeSchedulerFilter, renderDepartments, resetDepartmentForm, handleSaveDepartment } from './ui/departments.js';
 import { renderRoles, resetRoleForm, handleSaveRole, populateRoleColorPalette, ensureRoleDeptMultiselect, populateRoleDeptCheckboxes } from './ui/roles.js';
@@ -32,6 +33,96 @@ export function applyRbacPermissions() {
     document.documentElement.dataset.role = role.replace(/\s+/g, '-');
 }
 
+// --- THIS IS THE FIX ---
+// This function will re-initialize the calendar. It needs to be accessible globally.
+window.reinitializeDatePickers = function() {
+    const weekPickerBtn = document.getElementById('date-picker-trigger-btn');
+    const weekPickerContainer = document.getElementById('date-picker-container');
+
+    if (window.vanillaCalendar) {
+        window.vanillaCalendar.destroy();
+    }
+
+    const updatePickerButtonText = (date) => {
+        const week = getWeekRange(date);
+        const fmt = (dt) => dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        if (weekPickerBtn) weekPickerBtn.textContent = `${fmt(week.start)} – ${fmt(week.end)}`;
+    };
+
+    // Map your saved setting -> day index (0=Sun .. 6=Sat)
+    const startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+    const startDayKey = weekStartsOn(); // returns 'sun' | 'mon' | ...
+    const firstWeekday = startMap[startDayKey] ?? 1; // default Monday
+
+    let calendar;
+    
+    // Try V3 (Calendar) first, fall back to V2 (VanillaCalendar)
+    const isV3 = window.VanillaCalendarPro && window.VanillaCalendarPro.Calendar;
+    
+    if (isV3) {
+      const { Calendar } = window.VanillaCalendarPro;
+      calendar = new Calendar(weekPickerContainer, {
+        firstWeekday,
+        actions: {
+          clickDay(event, self) {
+            const selectedDateStr = self.selectedDates?.[0];
+            if (selectedDateStr) {
+              handleWeekChange({ target: { value: selectedDateStr } });
+              updatePickerButtonText(new Date(selectedDateStr));
+              calendar.hide();
+            }
+          }
+        },
+        settings: {
+             visibility: { theme: 'light', alwaysVisible: false },
+             selection: { day: 'single' },
+             selected: { dates: [currentViewDate.toISOString().substring(0, 10)] }
+        }
+      });
+    } else {
+      // V2.x API
+      calendar = new VanillaCalendar(weekPickerContainer, {
+        type: 'default',
+        actions: {
+          clickDay(event, self) {
+            const selectedDateStr = self.selectedDates[0];
+            if (selectedDateStr) {
+              handleWeekChange({ target: { value: selectedDateStr } });
+              updatePickerButtonText(new Date(selectedDateStr));
+              calendar.hide();
+            }
+          }
+        },
+        settings: {
+          iso8601: firstWeekday !== 0, // true => Monday first, false => Sunday first
+          visibility: { theme: 'light', alwaysVisible: false },
+          selection: { day: 'single' },
+          selected: { dates: [currentViewDate.toISOString().substring(0, 10)] }
+        }
+      });
+    }
+
+    calendar.init();
+    calendar.hide();
+    window.vanillaCalendar = calendar; // Store instance globally to destroy it later
+
+    if (weekPickerBtn) {
+        weekPickerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            calendar.show();
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (weekPickerContainer && !weekPickerContainer.contains(e.target) && e.target !== weekPickerBtn) {
+            calendar.hide();
+        }
+    });
+    
+    updatePickerButtonText(currentViewDate);
+};
+// --- END FIX ---
+
 
 // --- Application Entry Point ---
 window.__startApp = function() {
@@ -44,57 +135,8 @@ window.__startApp = function() {
     initializeDataListeners();
     initializeSync();
 
-    // --- NEW: Vanilla Calendar Pro Initialization ---
-    const weekPickerBtn = document.getElementById('date-picker-trigger-btn');
-    const weekPickerContainer = document.getElementById('date-picker-container');
-
-    const updatePickerButtonText = (date) => {
-        const week = getWeekRange(date);
-        const fmt = (dt) => dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-        weekPickerBtn.textContent = `${fmt(week.start)} – ${fmt(week.end)}`;
-    };
-
-    const calendar = new VanillaCalendar(weekPickerContainer, {
-        type: 'default',
-        actions: {
-            clickDay(event, self) {
-                const selectedDateStr = self.selectedDates[0];
-                if (selectedDateStr) {
-                    handleWeekChange({ target: { value: selectedDateStr } });
-                    updatePickerButtonText(new Date(selectedDateStr));
-                    calendar.hide();
-                }
-            },
-        },
-        settings: {
-            iso8601: true, // Week starts on Monday
-            visibility: {
-                theme: 'light',
-                alwaysVisible: false,
-            },
-            selection: {
-                day: 'single',
-            },
-            selected: {
-                dates: [currentViewDate.toISOString().substring(0, 10)],
-            }
-        },
-    });
-    calendar.init();
-    calendar.hide(); // Start hidden
-
-    weekPickerBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        calendar.show();
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!weekPickerContainer.contains(e.target) && e.target !== weekPickerBtn) {
-            calendar.hide();
-        }
-    });
-
-    updatePickerButtonText(currentViewDate);
+    // --- NEW: Initialize Vanilla Calendar Pro ---
+    window.reinitializeDatePickers();
     // --- END: Vanilla Calendar Initialization ---
 
     populateRoleColorPalette();
