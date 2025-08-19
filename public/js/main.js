@@ -156,7 +156,7 @@ window.reinitializeDatePickers = function() {
              selection: { day: 'single' },
              selected: { dates: [currentViewDate.toISOString().substring(0, 10)] }
         }
-    });
+    };
 
     calendar.init();
     highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
