@@ -51,30 +51,34 @@ window.reinitializeDatePickers = function() {
     const firstWeekday = startMap[startDayKey] ?? 1;
 
     const calendar = new VanillaCalendar(weekPickerContainer, {
-      firstWeekday,
-      actions: {
-        clickDay(event, self) {
-          const selectedDateStr = self.selectedDates?.[0];
-          if (selectedDateStr) {
-            handleWeekChange({ target: { value: selectedDateStr } });
-            updatePickerButtonText(new Date(selectedDateStr));
-            calendar.hide();
-          }
+        firstWeekday,
+        actions: {
+            clickDay(event, self) {
+                const selectedDateStr = self.context?.selectedDates?.[0];
+                if (selectedDateStr) {
+                    handleWeekChange({ target: { value: selectedDateStr } });
+                    updatePickerButtonText(new Date(selectedDateStr));
+                    calendar.hide();
+                    if (weekPickerContainer) weekPickerContainer.style.display = 'none';
+                }
+            },
+        },
+        settings: {
+             visibility: { theme: 'light', alwaysVisible: false },
+             selection: { day: 'single' },
+             selected: { dates: [currentViewDate.toISOString().substring(0, 10)] }
         }
-      },
-      settings: {
-           visibility: { theme: 'light', alwaysVisible: false },
-           selection: { day: 'single' },
-           selected: { dates: [currentViewDate.toISOString().substring(0, 10)] }
-      }
     });
 
     calendar.init();
-    window.vanillaCalendar = calendar;
+    calendar.hide();
+    if (weekPickerContainer) weekPickerContainer.style.display = 'none';
+    window.vanillaCalendar = calendar; 
 
     if (weekPickerBtn) {
         weekPickerBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (weekPickerContainer) weekPickerContainer.style.display = 'block';
             calendar.show();
         });
     }
@@ -82,11 +86,11 @@ window.reinitializeDatePickers = function() {
     document.addEventListener('click', (e) => {
         if (weekPickerContainer && !weekPickerContainer.contains(e.target) && e.target !== weekPickerBtn) {
             calendar.hide();
+            if (weekPickerContainer) weekPickerContainer.style.display = 'none';
         }
     });
     
     updatePickerButtonText(currentViewDate);
-    calendar.hide();
 };
 
 // --- Application Entry Point ---
@@ -235,7 +239,6 @@ window.__startApp = function() {
         cleanupDataListeners();
         console.log("Firestore listeners cleaned up on tab close.");
     });
-
 
     document.querySelectorAll('.modal .close-modal-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
