@@ -17,6 +17,34 @@ import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventL
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
 import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mjs';
 
+
+// --- Helper: highlight full week in Vanilla Calendar ---
+function highlightWeekInCalendar(calendar, date, weekStartsOnKey) {
+    try {
+        const startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+        const startIdx = startMap[weekStartsOnKey] ?? 1;
+        const base = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        // Compute start of week according to settings
+        const day = base.getDay();
+        const diff = (day - startIdx + 7) % 7;
+        const weekStart = new Date(base);
+        weekStart.setDate(base.getDate() - diff);
+        const iso = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().substring(0,10);
+        const dates = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(weekStart);
+            d.setDate(weekStart.getDate() + i);
+            dates.push(iso(d));
+        }
+        // Switch to multiple-day selection and set all 7 dates
+        calendar.update({
+            settings: { selection: { day: 'multiple' } },
+            selected: { dates }
+        });
+    } catch (err) {
+        console.warn('Failed to highlight week in calendar:', err);
+    }
+}
 let isAppInitialized = false;
 
 export function resetAppInitialization() {
@@ -56,6 +84,10 @@ window.reinitializeDatePickers = function() {
             clickDay(event, self) {
                 const selectedDateStr = self.context?.selectedDates?.[0];
                 if (selectedDateStr) {
+                    const d = new Date(selectedDateStr + 'T00:00:00');
+                    // Highlight the full week in the calendar UI
+                    highlightWeekInCalendar(calendar, d, weekStartsOn());
+                    // Update app state + grid
                     handleWeekChange({ target: { value: selectedDateStr } });
                     updatePickerButtonText(new Date(selectedDateStr));
                     calendar.hide();
@@ -71,6 +103,8 @@ window.reinitializeDatePickers = function() {
     });
 
     calendar.init();
+    // Pre-highlight the current week when opening
+    highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
     calendar.hide();
     if (weekPickerContainer) weekPickerContainer.style.display = 'none';
     window.vanillaCalendar = calendar; 
@@ -79,6 +113,8 @@ window.reinitializeDatePickers = function() {
         weekPickerBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (weekPickerContainer) weekPickerContainer.style.display = 'block';
+            // Ensure current week is highlighted before showing
+            highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
             calendar.show();
         });
     }
