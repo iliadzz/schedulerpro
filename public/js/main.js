@@ -187,9 +187,9 @@ window.reinitializeDatePickers = function() {
 
     
 
-    const startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+    const startMap = { sun: 7, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
     const startDayKey = weekStartsOn();
-    const firstWeekday = startMap[startDayKey] ?? 1;
+    const firstWeekday = startMap[startDayKey] || 1;
 
     const calendar = new VanillaCalendar(weekPickerContainer, {
     firstWeekday: firstWeekday,
