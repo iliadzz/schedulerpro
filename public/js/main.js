@@ -106,9 +106,6 @@ window.reinitializeDatePickers = function() {
         window.vanillaCalendar.destroy();
     }
 
-
-
-
     const startMap = { sun: 7, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
     const startDayKey = weekStartsOn();
     const firstWeekday = startMap[startDayKey] || 1;
@@ -118,18 +115,34 @@ window.reinitializeDatePickers = function() {
 
         onClickDate: function (self, event) {
             if (event) event.stopPropagation();
-            var selectedDateStr = (calendar && calendar.context && calendar.context.selectedDates && calendar.context.selectedDates[0]) || null;
-            if (selectedDateStr) {
-                const [year, month, day] = selectedDateStr.split('-').map(Number);
-                var d = new Date(year, month - 1, day);
 
-                window.highlightWeekInCalendar(calendar, d, weekStartsOn());
-                window.updateWeekBadge(weekPickerContainer, d);
-                handleWeekChange(d);
-                window.updatePickerButtonText(d);
-                calendar.hide();
-                if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
+            // Prefer the ISO string VanillaCalendar usually provides:
+            let iso = self?.context?.selectedDates?.[0] || null;
+
+            // If not present (can happen after switching month/year), build ISO from view state + clicked day
+            if (!iso) {
+                const viewYear  = self?.context?.date?.current?.year;   // e.g. 2026
+                const viewMonth = self?.context?.date?.current?.month;  // 1..12
+                // Try to grab the day from dataset; fallback to text
+                const day = Number(event?.target?.dataset?.calendarDay ?? event?.target?.textContent);
+                if (viewYear && viewMonth && day) {
+                    const mm = String(viewMonth).padStart(2, '0');
+                    const dd = String(day).padStart(2, '0');
+                    iso = `${viewYear}-${mm}-${dd}`;
+                }
             }
+
+            if (!iso) return;
+
+            const [y, m, dNum] = iso.split('-').map(Number);
+            const picked = new Date(y, m - 1, dNum);
+
+            window.highlightWeekInCalendar(calendar, picked, weekStartsOn());
+            window.updateWeekBadge(weekPickerContainer, picked);
+            handleWeekChange(picked);
+            window.updatePickerButtonText(picked);
+            calendar.hide();
+            if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
         },
 
         onClickTitle: (self, event) => {
@@ -163,9 +176,6 @@ window.reinitializeDatePickers = function() {
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
     window.updateWeekBadge(weekPickerContainer, currentViewDate);
     window.updatePickerButtonText(currentViewDate);
-    window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
-    window.updateWeekBadge(weekPickerContainer, currentViewDate);
-    updatePickerButtonText(currentViewDate);
     calendar.hide();
     if (weekPickerContainer) weekPickerContainer.style.display = 'none';
     window.vanillaCalendar = calendar;
@@ -173,10 +183,17 @@ window.reinitializeDatePickers = function() {
     if (weekPickerBtn) {
         weekPickerBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (weekPickerContainer) weekPickerContainer.style.display = 'block';
-            window.updateWeekBadge(weekPickerContainer, currentViewDate);
-            window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
-            calendar.show();
+            if (weekPickerContainer) {
+                const isVisible = weekPickerContainer.style.display === 'block';
+                weekPickerContainer.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    window.updateWeekBadge(weekPickerContainer, currentViewDate);
+                    window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
+                    calendar.show();
+                } else {
+                    calendar.hide();
+                }
+            }
         });
     }
 
@@ -189,6 +206,7 @@ window.reinitializeDatePickers = function() {
 
     updatePickerButtonText(currentViewDate);
 };
+
 
 // --- Application Entry Point ---
 window.__startApp = function() {
