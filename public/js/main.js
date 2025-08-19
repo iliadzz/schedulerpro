@@ -17,12 +17,16 @@ import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventL
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
 import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mjs';
 
-// === Global Calendar Helpers (attached to window) =============================
+
+// === Calendar Helpers (single source of truth) ================================
 (function(){
-    
-function highlightWeekInCalendar(calendar, date, weekStartsOnKey) {
-    var startIdxMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-    var startIdx = (startIdxMap[weekStartsOnKey] != null) ? startIdxMap[weekStartsOnKey] : 1;
+  function weekStartIndex(key){ // for JS Date.getDay (0=Sun..6=Sat)
+    var map = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
+    return (map[key] != null) ? map[key] : 1;
+  }
+
+  window.highlightWeekInCalendar = function(calendar, date, weekStartsOnKey){
+    var startIdx = weekStartIndex(weekStartsOnKey);
     var base = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     var day = base.getDay();
     var diff = (day - startIdx + 7) % 7;
@@ -30,141 +34,52 @@ function highlightWeekInCalendar(calendar, date, weekStartsOnKey) {
     weekStart.setDate(base.getDate() - diff);
     var weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
-    var iso = function(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().substring(0,10); };
-    var from = iso(weekStart);
-    var to = iso(weekEnd);
+    function iso(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().substring(0,10); }
+    var from = iso(weekStart), to = iso(weekEnd);
     if (calendar && typeof calendar.update === 'function') {
-        calendar.update({ settings: { selection: { day: 'range' } }, selected: { from: from, to: to } });
+      calendar.update({ settings: { selection: { day: 'range' } }, selected: { from: from, to: to } });
     } else if (calendar && typeof calendar.set === 'function') {
-        calendar.set({ settings: { selection: { day: 'range' } }, selected: { from: from, to: to } });
+      calendar.set({ settings: { selection: { day: 'range' } }, selected: { from: from, to: to } });
     }
-}
-            var dates = [];
-            for (var k = 0; k < 7; k++) {
-                var d = new Date(weekStart);
-                d.setDate(weekStart.getDate() + k);
-                dates.push(iso(d));
-            }
-            if (calendar && typeof calendar.update === 'function') {
-                calendar.update({ settings: { selection: { day: 'range' } }, selected: { dates: dates } });
-            } else if (calendar && typeof calendar.set === 'function') {
-                calendar.set({ settings: { selection: { day: 'range' } }, selected: { dates: dates } });
-            }
-        } catch (err) { console.warn('highlightWeekInCalendar failed', err); }
+  };
+
+  function ensureWeekBadge(container) {
+    var badge = container.querySelector('#vc-week-badge');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.id = 'vc-week-badge';
+      badge.className = 'vc-week-badge';
+      badge.setAttribute('aria-live', 'polite');
+      container.insertAdjacentElement('afterbegin', badge);
     }
-
-    function ensureWeekBadge(container) {
-        var badge = container.querySelector('#vc-week-badge');
-        if (!badge) {
-            badge = document.createElement('div');
-            badge.id = 'vc-week-badge';
-            badge.className = 'vc-week-badge';
-            badge.setAttribute('aria-live', 'polite');
-            container.insertAdjacentElement('afterbegin', badge);
-        }
-        if (!document.getElementById('vc-week-badge-style')) {
-            var st = document.createElement('style');
-            st.id = 'vc-week-badge-style';
-            st.textContent = '.vc-week-badge{font-size:.9rem;font-weight:600;margin-bottom:.5rem;padding:.35rem .6rem;border-radius:.6rem;background:#3498db;color:#fff;display:inline-block;box-shadow:0 1px 3px rgba(0,0,0,.08)}@media (prefers-color-scheme: dark){.vc-week-badge{box-shadow:0 1px 3px rgba(0,0,0,.35)}}';
-            document.head.appendChild(st);
-        }
-        return badge;
+    if (!document.getElementById('vc-week-badge-style')) {
+      var st = document.createElement('style');
+      st.id = 'vc-week-badge-style';
+      st.textContent = '.vc-week-badge{font-size:.9rem;font-weight:600;margin-bottom:.5rem;padding:.35rem .6rem;border-radius:.6rem;background:#3498db;color:#fff;display:inline-block;box-shadow:0 1px 3px rgba(0,0,0,.08)}@media (prefers-color-scheme: dark){.vc-week-badge{box-shadow:0 1px 3px rgba(0,0,0,.35)}}';
+      document.head.appendChild(st);
     }
+    return badge;
+  }
 
-    function formatWeekRangeLabel(date) {
-        var range = getWeekRange(date, weekStartsOn());
-        function fmt(d){ return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
-        return fmt(range.start) + ' – ' + fmt(range.end);
+  window.formatWeekRangeLabel = function(date){
+    var range = getWeekRange(date, weekStartsOn());
+    function fmt(d){ return d.toLocaleDateString(undefined, { month:'short', day:'numeric' }); }
+    return fmt(range.start) + ' – ' + fmt(range.end);
+  };
+
+  window.updateWeekBadge = function(container, date){
+    var badge = ensureWeekBadge(container);
+    badge.textContent = window.formatWeekRangeLabel(date);
+  };
+
+  window.updatePickerButtonText = function(date){
+    var label = window.formatWeekRangeLabel(date);
+    var btn = document.getElementById('date-picker-trigger-btn') || document.getElementById('week-picker-btn');
+    if (btn) {
+      btn.textContent = label;
+      btn.style.color = '#fff';
     }
-
-    function updateWeekBadge(container, date) {
-        var badge = ensureWeekBadge(container);
-        badge.textContent = formatWeekRangeLabel(date);
-    }
-
-    // expose globally for any window.* callers (e.g., reinitializeDatePickers)
-    window.highlightWeekInCalendar = highlightWeekInCalendar;
-    window.updateWeekBadge = updateWeekBadge;
-    window.formatWeekRangeLabel = formatWeekRangeLabel;
-})();
-// =============================================================================
-
-
-// === Global Calendar Helpers (attached to window) =============================
-(function(){
-    function highlightWeekInCalendar(calendar, date, weekStartsOnKey) {
-        try {
-            var startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-            var startIdx = startMap[weekStartsOnKey] != null ? startMap[weekStartsOnKey] : 1;
-            var base = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-            var day = base.getDay();
-            var diff = (day - startIdx + 7) % 7;
-            var weekStart = new Date(base);
-            weekStart.setDate(base.getDate() - diff);
-            function iso(d){
-                var dd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-                return dd.toISOString().substring(0,10);
-            }
-            var dates = [];
-            for (var k = 0; k < 7; k++) {
-                var d = new Date(weekStart);
-                d.setDate(weekStart.getDate() + k);
-                dates.push(iso(d));
-            }
-            if (calendar && typeof calendar.update === 'function') {
-                calendar.update({ settings: { selection: { day: 'range' } }, selected: { dates: dates } });
-            } else if (calendar && typeof calendar.set === 'function') {
-                calendar.set({ settings: { selection: { day: 'range' } }, selected: { dates: dates } });
-            }
-        } catch (err) { console.warn('highlightWeekInCalendar failed', err); }
-    }
-
-    function ensureWeekBadge(container) {
-        var badge = container.querySelector('#vc-week-badge');
-        if (!badge) {
-            badge = document.createElement('div');
-            badge.id = 'vc-week-badge';
-            badge.className = 'vc-week-badge';
-            badge.setAttribute('aria-live', 'polite');
-            container.insertAdjacentElement('afterbegin', badge);
-        }
-        if (!document.getElementById('vc-week-badge-style')) {
-            var st = document.createElement('style');
-            st.id = 'vc-week-badge-style';
-            st.textContent = '.vc-week-badge{font-size:.9rem;font-weight:600;margin-bottom:.5rem;padding:.35rem .6rem;border-radius:.6rem;background:#3498db;color:#fff;display:inline-block;box-shadow:0 1px 3px rgba(0,0,0,.08)}@media (prefers-color-scheme: dark){.vc-week-badge{box-shadow:0 1px 3px rgba(0,0,0,.35)}}';
-            document.head.appendChild(st);
-        }
-        return badge;
-    }
-
-    function formatWeekRangeLabel(date) {
-        var range = getWeekRange(date, weekStartsOn());
-        function fmt(d){ return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
-        return fmt(range.start) + ' – ' + fmt(range.end);
-    }
-
-    function updateWeekBadge(container, date) {
-        var badge = ensureWeekBadge(container);
-        badge.textContent = formatWeekRangeLabel(date);
-    }
-
-    function updatePickerButtonText(date) {
-        try {
-            var week = getWeekRange(date, weekStartsOn());
-            var fmt = function(dt){ return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }); };
-            var label = fmt(week.start) + " – " + fmt(week.end);
-            var btn = document.getElementById('date-picker-trigger-btn') || document.getElementById('week-picker-btn');
-            if (btn) {
-                btn.textContent = label;
-                btn.style.color = '#fff';
-            }
-        } catch(e){ console.warn('updatePickerButtonText failed', e); }
-    }
-
-    window.highlightWeekInCalendar = highlightWeekInCalendar;
-    window.updateWeekBadge = updateWeekBadge;
-    window.formatWeekRangeLabel = formatWeekRangeLabel;
-    window.updatePickerButtonText = updatePickerButtonText;
+  };
 })();
 // =============================================================================
 
@@ -200,36 +115,35 @@ window.reinitializeDatePickers = function() {
 
     const calendar = new VanillaCalendar(weekPickerContainer, {
     firstWeekday: firstWeekday,
+
     onClickDate: function () {
-        try {
-            var selectedDateStr = (calendar && calendar.context && calendar.context.selectedDates && calendar.context.selectedDates[0]) || null;
+        var selectedDateStr = (calendar && calendar.context && calendar.context.selectedDates && calendar.context.selectedDates[0]) || null;
+        if (selectedDateStr) {
+            var d = new Date(selectedDateStr + 'T00:00:00');
+            window.highlightWeekInCalendar(calendar, d, weekStartsOn());
+            window.updateWeekBadge(weekPickerContainer, d);
+            handleWeekChange({ target: { value: selectedDateStr } });
+            window.updatePickerButtonText(new Date(selectedDateStr));
+            calendar.hide();
+            if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
+        }
+    },
+
+    actions: {
+        clickDay: function (event, self) {
+            var selectedDateStr = (self && self.context && self.context.selectedDates && self.context.selectedDates[0]) || null;
             if (selectedDateStr) {
                 var d = new Date(selectedDateStr + 'T00:00:00');
                 window.highlightWeekInCalendar(calendar, d, weekStartsOn());
                 window.updateWeekBadge(weekPickerContainer, d);
                 handleWeekChange({ target: { value: selectedDateStr } });
-                updatePickerButtonText(new Date(selectedDateStr));
+                window.updatePickerButtonText(new Date(selectedDateStr));
                 calendar.hide();
                 if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
             }
-        } catch (e) { console.warn('onClickDate handler failed', e); }
-    },
-    actions: {
-        clickDay: function (event, self) {
-            try {
-                var selectedDateStr = (self && self.context && self.context.selectedDates && self.context.selectedDates[0]) || null;
-                if (selectedDateStr) {
-                    var d = new Date(selectedDateStr + 'T00:00:00');
-                    window.highlightWeekInCalendar(calendar, d, weekStartsOn());
-                    window.updateWeekBadge(weekPickerContainer, d);
-                    handleWeekChange({ target: { value: selectedDateStr } });
-                    updatePickerButtonText(new Date(selectedDateStr));
-                    calendar.hide();
-                    if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
-                }
-            } catch (e) { console.warn('clickDay handler failed', e); }
         }
     },
+
     settings: {
         visibility: { theme: 'light', alwaysVisible: false },
         selection: { day: 'single' },
@@ -238,6 +152,9 @@ window.reinitializeDatePickers = function() {
 });
 
     calendar.init();
+    window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
+    window.updateWeekBadge(weekPickerContainer, currentViewDate);
+    window.updatePickerButtonText(currentViewDate);
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
     window.updateWeekBadge(weekPickerContainer, currentViewDate);
     updatePickerButtonText(currentViewDate);
