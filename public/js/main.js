@@ -1,9 +1,7 @@
 // js/main.js
-
-// === VC DEBUG INSTRUMENTATION ===
 const VC_DEBUG = true;
-function vcLog(...args) { if (VC_DEBUG) console.log('[VC]', ...args); }
-function vcWarn(...args) { if (VC_DEBUG) console.warn('[VC]', ...args); }
+function vcLog(...args){ if(VC_DEBUG) console.log('[VC]', ...args); }
+function vcWarn(...args){ if(VC_DEBUG) console.warn('[VC]', ...args); }
 
 
 import { setLanguage } from './i18n.js';
@@ -120,7 +118,6 @@ window.reinitializeDatePickers = function() {
         firstWeekday: firstWeekday,
 
         onClickDate(self, event) {
-            vcLog('✅ onClickDate fired', {event, self});
             const dateCell = event?.target?.closest('[data-vc-date]');
             if (!dateCell) {
               return;
@@ -137,7 +134,6 @@ window.reinitializeDatePickers = function() {
           },  // <-- IMPORTANT: comma after actions
 
         onClickTitle: (self, event) => {
-            vcLog('⏫ onClickTitle fired');
             event.stopPropagation();
             const target = event.target;
             if (target.closest('[data-vc="month"]')) {
@@ -148,17 +144,11 @@ window.reinitializeDatePickers = function() {
         },
 
         onClickMonth: (self, event) => {
-            vcLog('📆 onClickMonth fired');
-            const mBtn = event?.target?.closest('[data-vc-month]');
-            if (!mBtn) { vcWarn('⚠️ No [data-vc-month] ancestor for click'); } else { vcLog('📅 Picked month index:', mBtn?.dataset?.vcMonth); }
             event.stopPropagation();
             self.set({ type: 'default' });
         },
 
         onClickYear: (self, event) => {
-            vcLog('🗓️ onClickYear fired');
-            const yBtn = event?.target?.closest('[data-vc-year]');
-            if (!yBtn) { vcWarn('⚠️ No [data-vc-year] ancestor for click'); } else { vcLog('🗓️ Picked year:', yBtn?.dataset?.vcYear); }
             event.stopPropagation();
             self.set({ type: 'month' });
         },
@@ -170,19 +160,7 @@ window.reinitializeDatePickers = function() {
         }
     });
 
-    
-    // Extra debug listener to catch clicks on month grid even if onClickMonth doesn't fire
-    try {
-        if (VC_DEBUG && weekPickerContainer) {
-            weekPickerContainer.addEventListener('click', (ev) => {
-                const m = ev.target.closest('[data-vc-month]');
-                const y = ev.target.closest('[data-vc-year]');
-                if (m) vcLog('🛰️ Raw container click on [data-vc-month]', m.dataset.vcMonth);
-                if (y) vcLog('🛰️ Raw container click on [data-vc-year]', y.dataset.vcYear);
-            }, true);
-        }
-    } catch (e) { vcWarn('VC debug listener attach failed', e); }
-calendar.init();
+    calendar.init();
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
     window.updateWeekBadge(weekPickerContainer, currentViewDate);
     window.window.updatePickerButtonText(currentViewDate);
