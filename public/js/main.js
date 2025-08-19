@@ -1,9 +1,4 @@
-// js/main.js (merged fix)
-// - Fixes week selection jumping to current month by ensuring a full YYYY-MM-DD
-//   is constructed in onClickDate and passed through to handleWeekChange.
-// - Adds debug logs to trace the date throughout the flow.
-// - Includes an optional microtask nudge in onClickMonth to ensure VC view commit.
-// - Keeps highlight/update helpers as single source of truth and adds comments.
+// js/main.js
 
 import { setLanguage } from './i18n.js';
 import { HistoryManager } from './features/history.js';
@@ -25,13 +20,11 @@ import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mj
 
 // === Calendar Helpers (single source of truth) ================================
 (function(){
-  // Map settings key to JS Date.getDay() (0..6). Keeps logic centralized.
   function weekStartIndex(key){ // for JS Date.getDay (0=Sun..6=Sat)
     var map = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
     return (map[key] != null) ? map[key] : 1;
   }
 
-  // Highlight the full week of "date" in VanillaCalendar
   window.highlightWeekInCalendar = function(calendar, date, weekStartsOnKey){
     var startIdx = weekStartIndex(weekStartsOnKey);
     var base = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -50,7 +43,6 @@ import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mj
     }
   };
 
-  // Small UI badge above the calendar showing the selected week range
   function ensureWeekBadge(container) {
     var badge = container.querySelector('#vc-week-badge');
     if (!badge) {
@@ -69,7 +61,6 @@ import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mj
     return badge;
   }
 
-  // Format the week range label (e.g., Jan 1 – Jan 7)
   window.formatWeekRangeLabel = function(date){
     var range = getWeekRange(date, weekStartsOn());
     function fmt(d){ return d.toLocaleDateString(undefined, { month:'short', day:'numeric' }); }
@@ -107,7 +98,6 @@ export function applyRbacPermissions() {
     document.documentElement.dataset.role = role.replace(/\s+/g, '-');
 }
 
-// Re-initialize the VanillaCalendar week picker and wire its click handlers.
 window.reinitializeDatePickers = function() {
     const weekPickerBtn = document.getElementById('date-picker-trigger-btn') || document.getElementById('week-picker-btn');
     const weekPickerContainer = document.getElementById('date-picker-container');
@@ -123,45 +113,31 @@ window.reinitializeDatePickers = function() {
     const calendar = new VanillaCalendar(weekPickerContainer, {
         firstWeekday: firstWeekday,
 
-        // CRITICAL: Build a COMPLETE date from either VC's selectedDates or the current view + clicked day.
-        onClickDate: function (self, event) {
-            if (event) event.stopPropagation();
-
-            // Prefer the ISO string VanillaCalendar usually provides:
-            let iso = self?.context?.selectedDates?.[0] || null;
-
-            // If not present (can happen after switching month/year), build ISO from view state + clicked day
-            if (!iso) {
-                const viewYear  = self?.context?.date?.current?.year;   // e.g. 2026
-                const viewMonth = self?.context?.date?.current?.month;  // 1..12
-                // Try to grab the day from dataset; fallback to text
-                const day = Number(event?.target?.dataset?.calendarDay ?? event?.target?.textContent);
-                if (viewYear && viewMonth && day) {
-                    const mm = String(viewMonth).padStart(2, '0');
-                    const dd = String(day).padStart(2, '0');
-                    iso = `${viewYear}-${mm}-${dd}`;
+        // --- FINAL FIX: Use the actions.clickDay handler ---
+        actions: {
+            clickDay(event, self) {
+                const dateCell = event.target.closest('[data-vc-date]');
+                if (!dateCell) return;
+    
+                const selectedDateStr = dateCell.dataset.vcDate;
+                if (!selectedDateStr) return;
+    
+                const [year, month, day] = selectedDateStr.split('-').map(Number);
+                const pickedDate = new Date(year, month - 1, day);
+    
+                window.highlightWeekInCalendar(calendar, pickedDate, weekStartsOn());
+                window.updateWeekBadge(weekPickerContainer, pickedDate);
+                handleWeekChange(pickedDate);
+                window.updatePickerButtonText(pickedDate);
+                self.hide();
+                if (weekPickerContainer) {
+                    weekPickerContainer.style.display = 'none';
                 }
             }
-
-            if (!iso) return;
-
-            const [y, m, dNum] = iso.split('-').map(Number);
-            const picked = new Date(y, m - 1, dNum);
-
-            // Debug trace to verify what we're passing forward
-            console.debug('[vc] iso:', iso, 'picked:', picked.toISOString());
-
-            window.highlightWeekInCalendar(calendar, picked, weekStartsOn());
-            window.updateWeekBadge(weekPickerContainer, picked);
-            handleWeekChange(picked);
-            window.updatePickerButtonText(picked);
-            calendar.hide();
-            if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
         },
 
-        // Allow clicking title parts to change view type (month/year pickers)
         onClickTitle: (self, event) => {
-            event.stopPropagation(); // Prevents the calendar from closing
+            event.stopPropagation();
             const target = event.target;
             if (target.closest('[data-vc="month"]')) {
                 self.set({ type: 'month' });
@@ -170,18 +146,14 @@ window.reinitializeDatePickers = function() {
             }
         },
 
-        // When a month is picked, return to day view. A tiny microtask helps VC commit its view.
         onClickMonth: (self, event) => {
             event.stopPropagation();
-            self.set({ type: 'default' }); // Switch back to day view
-            // Optional guard: ensure the internal view commit completes before the very next click.
-            queueMicrotask(() => {});
+            self.set({ type: 'default' });
         },
 
-        // When a year is picked, go select the month next.
         onClickYear: (self, event) => {
             event.stopPropagation();
-            self.set({ type: 'month' }); // Switch to month view for the new year
+            self.set({ type: 'month' });
         },
 
         settings: {
@@ -216,7 +188,6 @@ window.reinitializeDatePickers = function() {
         });
     }
 
-    // Close calendar when clicking outside
     document.addEventListener('click', (e) => {
         if (weekPickerContainer && !weekPickerContainer.contains(e.target) && e.target !== weekPickerBtn) {
             calendar.hide();
@@ -224,7 +195,6 @@ window.reinitializeDatePickers = function() {
         }
     });
 
-    // Ensure button label matches current view on init
     updatePickerButtonText(currentViewDate);
 };
 
@@ -321,11 +291,8 @@ window.__startApp = function() {
     const openCopyWeekModalBtn = document.getElementById('open-copy-week-modal-btn');
     if (openCopyWeekModalBtn) openCopyWeekModalBtn.addEventListener('click', handleCopyWeek);
 
-    const confirmCopyWeekBtn = document.getElementById('confirm-copyWeek-btn');
-    // Fix potential ID typo by guarding both IDs
-    const confirmCopyWeekBtnAlt = document.getElementById('confirm-copy-week-btn');
+    const confirmCopyWeekBtn = document.getElementById('confirm-copy-week-btn');
     if (confirmCopyWeekBtn) confirmCopyWeekBtn.addEventListener('click', executeCopyWeek);
-    if (confirmCopyWeekBtnAlt) confirmCopyWeekBtnAlt.addEventListener('click', executeCopyWeek);
 
     dom.clearCurrentWeekBtn.addEventListener('click', handleClearWeek);
     dom.manageEventsBtn.addEventListener('click', showEventsModal);
@@ -338,8 +305,14 @@ window.__startApp = function() {
 
     const undoBtn = document.getElementById('undo-btn');
     const redoBtn = document.getElementById('redo-btn');
-    if (undoBtn) addEventListener('click', () => { HistoryManager.undo(); renderWeeklySchedule(); });
-    if (redoBtn) addEventListener('click', () => { HistoryManager.redo(); renderWeeklySchedule(); });
+    if (undoBtn) undoBtn.addEventListener('click', () => {
+        HistoryManager.undo();
+        renderWeeklySchedule();
+    });
+    if (redoBtn) redoBtn.addEventListener('click', () => {
+        HistoryManager.redo();
+        renderWeeklySchedule();
+    });
 
     window.addEventListener('keydown', (event) => {
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {

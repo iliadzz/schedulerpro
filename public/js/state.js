@@ -56,7 +56,6 @@ const saveScheduleAssignments = debounce((updatedDocIds = []) => {
     if (Array.isArray(updatedDocIds) && updatedDocIds.length) {
         updatedDocIds.forEach(id => markDirtyAssignment(id));
     } else {
-        // Fallback for safety, though passing IDs is preferred
         markDirtyKey('scheduleAssignments');
     }
 }, 500);
@@ -72,38 +71,28 @@ const saveRestaurantSettings = debounce(() => {
 }, 500);
 
 
-function saveCurrentViewDate() {
-    localStorage.setItem('schedulerCurrentViewDate', currentViewDate.toISOString());
-}
-
-// --- Safe setter to replace the entire Y/M/D and persist it ---
-function setCurrentViewDate(d) {
-    const normalized = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    currentViewDate = normalized;
-    try {
-        saveCurrentViewDate();
-    } catch (e) {
-        // no-op
-    }
-}
-
-
-// --- Function to save the chosen employee display format ---
-function saveEmployeeDisplayFormat() {
-    localStorage.setItem('employeeDisplayFormat', employeeDisplayFormat);
-}
-
-
 // --- Application UI State ---
 const savedDate = localStorage.getItem('schedulerCurrentViewDate');
 let currentViewDate = savedDate ? new Date(savedDate) : new Date();
 
-// --- The display format is now loaded from localStorage and exported ---
-let employeeDisplayFormat = localStorage.getItem('employeeDisplayFormat') || 'LF'; // Default to 'Last, First'
+// --- NEW: Centralized, safe function to set the view date ---
+export function setCurrentViewDate(d) {
+    // Clone to avoid outside mutation and normalize to the start of the day
+    currentViewDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    saveCurrentViewDate(); // Persist the change
+}
 
-// --- NEW: Week start day is now derived from restaurantSettings ---
-// It provides a centralized, dynamic way to control the calendar view.
-// Defaults to 'mon' (Monday) if not set in the settings.
+function saveCurrentViewDate() {
+    localStorage.setItem('schedulerCurrentViewDate', currentViewDate.toISOString());
+}
+
+
+function saveEmployeeDisplayFormat() {
+    localStorage.setItem('employeeDisplayFormat', employeeDisplayFormat);
+}
+
+let employeeDisplayFormat = localStorage.getItem('employeeDisplayFormat') || 'LF'; 
+
 const weekStartsOn = () => restaurantSettings.weekStartDay || 'mon';
 
 let selectedDepartmentIds = ['all'];
@@ -148,8 +137,6 @@ export {
     saveScheduleAssignments,
     saveEvents,
     saveRestaurantSettings,
-    saveCurrentViewDate,
-    setCurrentViewDate,
     saveEmployeeDisplayFormat,
     currentViewDate,
     employeeDisplayFormat,

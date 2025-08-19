@@ -1,7 +1,7 @@
 // js/ui/scheduler.js
 
-// --- Import the new employeeDisplayFormat state variable ---
-import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate,  setCurrentViewDate, currentUser, saveScheduleAssignments, departments, employeeDisplayFormat, weekStartsOn} from '../state.js';
+// --- Import the new state management function ---
+import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, currentUser, saveScheduleAssignments, departments, employeeDisplayFormat, weekStartsOn, setCurrentViewDate } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { formatDate, getWeekRange, getDatesOfWeek, formatTimeForDisplay, calculateShiftDuration, getContrastColor, generateId } from '../utils.js';
@@ -38,20 +38,13 @@ function handleVacationClick(event) {
 }
 
 function deleteAssignedShift(userId, dateStr, assignmentId) {
-    // --- THIS IS THE FIX ---
-    // Instead of only creating a command, we now immediately modify the local state
-    // BEFORE the command is executed. This prevents the UI from reverting.
     const assignmentKey = `${userId}-${dateStr}`;
     const dayData = scheduleAssignments[assignmentKey];
     if (dayData && dayData.shifts) {
         const index = dayData.shifts.findIndex(a => a.assignmentId === assignmentId);
         if (index > -1) {
-            // Create the command with the state *before* modification, so it can be undone.
             const command = new DeleteAssignmentCommand(userId, dateStr, assignmentId);
             HistoryManager.doAction(command);
-
-            // Now, we re-apply the deletion to the local state immediately for the UI.
-            // This ensures that even if Firestore's listener fires, our local state is already correct.
             const dayDataImmediate = scheduleAssignments[assignmentKey];
             if (dayDataImmediate && dayDataImmediate.shifts) {
                 const immediateIndex = dayDataImmediate.shifts.findIndex(a => a.assignmentId === assignmentId);
@@ -64,7 +57,6 @@ function deleteAssignedShift(userId, dateStr, assignmentId) {
             }
         }
     }
-    // The command will still handle saving, so we just need to re-render.
     renderWeeklySchedule();
 }
 
@@ -84,45 +76,37 @@ function clearEmployeeWeek(userId, weekDates) {
 
 
 export function handlePrevWeek() {
-    // Move back 7 days, replace the full Y/M/D in state, then re-render
-    const d = new Date(currentViewDate.getFullYear(), currentViewDate.getMonth(), currentViewDate.getDate() - 7);
-    setCurrentViewDate(d);
+    const newDate = new Date(currentViewDate);
+    newDate.setDate(newDate.getDate() - 7);
+    setCurrentViewDate(newDate);
     renderWeeklySchedule();
 }
 
 export function handleNextWeek() {
-    // Move forward 7 days, replace the full Y/M/D in state, then re-render
-    const d = new Date(currentViewDate.getFullYear(), currentViewDate.getMonth(), currentViewDate.getDate() + 7);
-    setCurrentViewDate(d);
+    const newDate = new Date(currentViewDate);
+    newDate.setDate(newDate.getDate() + 7);
+    setCurrentViewDate(newDate);
     renderWeeklySchedule();
 }
 
 export function handleThisWeek() {
-    // Jump to today's date
-    const today = new Date();
-    setCurrentViewDate(today);
+    setCurrentViewDate(new Date());
     renderWeeklySchedule();
 }
 
-export function handleWeekChange(e) {
-    // Accept a Date (from calendar) or an input change event with YYYY-MM-DD
-    let picked = null;
-    if (e instanceof Date) {
-        picked = e;
-    } else if (e && e.target && e.target.value) {
-        const [yy, mm, dd] = e.target.value.split('-').map(Number);
+export function handleWeekChange(dateOrEvent) {
+    let picked;
+    if (dateOrEvent instanceof Date) {
+        picked = dateOrEvent;
+    } else if (dateOrEvent?.target?.value) {
+        const [yy, mm, dd] = dateOrEvent.target.value.split('-').map(Number);
         picked = new Date(yy, mm - 1, dd);
+    } else {
+        return; 
     }
-    if (!(picked instanceof Date) || isNaN(picked)) return;
-
-    // Optional: snap to start of week according to settings
-    const range = getWeekRange(picked, weekStartsOn());
-    const startOfWeek = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate());
-
-    console.debug('[weekChange] picked:', picked.toISOString(), 'startOfWeek:', startOfWeek.toISOString());
-
-    setCurrentViewDate(startOfWeek);
+    setCurrentViewDate(picked);
     renderWeeklySchedule();
+}
 
 export function handlePrint() {
     window.print();
@@ -265,8 +249,6 @@ export function renderWeeklySchedule() {
 
     const dayHeaders = document.querySelectorAll('.schedule-header-row .header-day');
     
-    // Define the order of days based on the start day setting.
-    // This ensures the header displays "Mon, Tue, Wed..." or "Sun, Mon, Tue..." correctly.
     const dayKeyOrder = startDay === 'mon' 
         ? ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
         : ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -274,7 +256,7 @@ export function renderWeeklySchedule() {
     dayHeaders.forEach((header, index) => {
         if (weekDates[index]) {
             const dateObj = weekDates[index];
-            const dayKey = dayKeyOrder[index]; // Use the defined order
+            const dayKey = dayKeyOrder[index]; 
             const dayInitial = getTranslatedString('day' + dayKey.charAt(0).toUpperCase() + dayKey.slice(1));
             
             let headerHTML = `${dayInitial} - ${dateObj.getDate()}`;
