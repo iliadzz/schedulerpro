@@ -113,36 +113,26 @@ window.reinitializeDatePickers = function() {
     const calendar = new VanillaCalendar(weekPickerContainer, {
         firstWeekday: firstWeekday,
 
-        onClickDate: function (self, event) {
-            if (event) event.stopPropagation();
-
-            // Prefer the ISO string VanillaCalendar usually provides:
-            let iso = self?.context?.selectedDates?.[0] || null;
-
-            // If not present (can happen after switching month/year), build ISO from view state + clicked day
-            if (!iso) {
-                const viewYear  = self?.context?.date?.current?.year;   // e.g. 2026
-                const viewMonth = self?.context?.date?.current?.month;  // 1..12
-                // Try to grab the day from dataset; fallback to text
-                const day = Number(event?.target?.dataset?.calendarDay ?? event?.target?.textContent);
-                if (viewYear && viewMonth && day) {
-                    const mm = String(viewMonth).padStart(2, '0');
-                    const dd = String(day).padStart(2, '0');
-                    iso = `${viewYear}-${mm}-${dd}`;
+        actions: {
+            clickDay(event, self) {
+                const dateCell = event.target.closest('[data-vc-date]');
+                if (!dateCell) return;
+    
+                const selectedDateStr = dateCell.dataset.vcDate;
+                if (!selectedDateStr) return;
+    
+                const [year, month, day] = selectedDateStr.split('-').map(Number);
+                const pickedDate = new Date(year, month - 1, day);
+    
+                window.highlightWeekInCalendar(calendar, pickedDate, weekStartsOn());
+                window.updateWeekBadge(weekPickerContainer, pickedDate);
+                handleWeekChange(pickedDate);
+                window.updatePickerButtonText(pickedDate);
+                self.hide();
+                if (weekPickerContainer) {
+                    weekPickerContainer.style.display = 'none';
                 }
             }
-
-            if (!iso) return;
-
-            const [y, m, dNum] = iso.split('-').map(Number);
-            const picked = new Date(y, m - 1, dNum);
-
-            window.highlightWeekInCalendar(calendar, picked, weekStartsOn());
-            window.updateWeekBadge(weekPickerContainer, picked);
-            handleWeekChange(picked);
-            window.updatePickerButtonText(picked);
-            calendar.hide();
-            if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
         },
 
         onClickTitle: (self, event) => {

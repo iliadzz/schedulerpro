@@ -72,19 +72,26 @@ const saveRestaurantSettings = debounce(() => {
 }, 500);
 
 
+// --- Application UI State ---
+const savedDate = localStorage.getItem('schedulerCurrentViewDate');
+let currentViewDate = savedDate ? new Date(savedDate) : new Date();
+
+// --- NEW: Centralized function to set the view date ---
+export function setCurrentViewDate(d) {
+    // Clone to avoid outside mutation and normalize to the start of the day
+    currentViewDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    saveCurrentViewDate();
+}
+
 function saveCurrentViewDate() {
     localStorage.setItem('schedulerCurrentViewDate', currentViewDate.toISOString());
 }
+
 
 // --- Function to save the chosen employee display format ---
 function saveEmployeeDisplayFormat() {
     localStorage.setItem('employeeDisplayFormat', employeeDisplayFormat);
 }
-
-
-// --- Application UI State ---
-const savedDate = localStorage.getItem('schedulerCurrentViewDate');
-let currentViewDate = savedDate ? new Date(savedDate) : new Date();
 
 // --- The display format is now loaded from localStorage and exported ---
 let employeeDisplayFormat = localStorage.getItem('employeeDisplayFormat') || 'LF'; // Default to 'Last, First'
@@ -136,7 +143,6 @@ export {
     saveScheduleAssignments,
     saveEvents,
     saveRestaurantSettings,
-    saveCurrentViewDate,
     saveEmployeeDisplayFormat,
     currentViewDate,
     employeeDisplayFormat,

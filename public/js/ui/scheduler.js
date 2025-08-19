@@ -1,7 +1,7 @@
 // js/ui/scheduler.js
 
-// --- Import the new employeeDisplayFormat state variable ---
-import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, saveCurrentViewDate, currentUser, saveScheduleAssignments, departments, employeeDisplayFormat, weekStartsOn } from '../state.js';
+// --- Import the new state management function ---
+import { users, roles, shiftTemplates, scheduleAssignments, events, currentViewDate, saveUsers, currentUser, saveScheduleAssignments, departments, employeeDisplayFormat, weekStartsOn, setCurrentViewDate } from '../state.js';
 import * as dom from '../dom.js';
 import { getTranslatedString } from '../i18n.js';
 import { formatDate, getWeekRange, getDatesOfWeek, formatTimeForDisplay, calculateShiftDuration, getContrastColor, generateId } from '../utils.js';
@@ -38,20 +38,13 @@ function handleVacationClick(event) {
 }
 
 function deleteAssignedShift(userId, dateStr, assignmentId) {
-    // --- THIS IS THE FIX ---
-    // Instead of only creating a command, we now immediately modify the local state
-    // BEFORE the command is executed. This prevents the UI from reverting.
     const assignmentKey = `${userId}-${dateStr}`;
     const dayData = scheduleAssignments[assignmentKey];
     if (dayData && dayData.shifts) {
         const index = dayData.shifts.findIndex(a => a.assignmentId === assignmentId);
         if (index > -1) {
-            // Create the command with the state *before* modification, so it can be undone.
             const command = new DeleteAssignmentCommand(userId, dateStr, assignmentId);
             HistoryManager.doAction(command);
-
-            // Now, we re-apply the deletion to the local state immediately for the UI.
-            // This ensures that even if Firestore's listener fires, our local state is already correct.
             const dayDataImmediate = scheduleAssignments[assignmentKey];
             if (dayDataImmediate && dayDataImmediate.shifts) {
                 const immediateIndex = dayDataImmediate.shifts.findIndex(a => a.assignmentId === assignmentId);
@@ -64,7 +57,6 @@ function deleteAssignedShift(userId, dateStr, assignmentId) {
             }
         }
     }
-    // The command will still handle saving, so we just need to re-render.
     renderWeeklySchedule();
 }
 
@@ -84,41 +76,38 @@ function clearEmployeeWeek(userId, weekDates) {
 
 
 export function handlePrevWeek() {
-    currentViewDate.setDate(currentViewDate.getDate() - 7);
-    saveCurrentViewDate();
+    const newDate = new Date(currentViewDate);
+    newDate.setDate(newDate.getDate() - 7);
+    setCurrentViewDate(newDate);
     renderWeeklySchedule();
 }
 
 export function handleNextWeek() {
-    currentViewDate.setDate(currentViewDate.getDate() + 7);
-    saveCurrentViewDate();
+    const newDate = new Date(currentViewDate);
+    newDate.setDate(newDate.getDate() + 7);
+    setCurrentViewDate(newDate);
     renderWeeklySchedule();
 }
 
 export function handleThisWeek() {
-    const today = new Date();
-    currentViewDate.setFullYear(today.getFullYear(), today.getMonth(), today.getDate());
-    saveCurrentViewDate();
+    setCurrentViewDate(new Date());
     renderWeeklySchedule();
 }
 
-export function handleWeekChange(e) {
-    let newDate;
-    if (e instanceof Date) {
-        // If a Date object is passed directly
-        newDate = e;
-    } else if (e.target && e.target.value) {
-        // If it's an event from an input, parse it carefully to avoid timezone issues
-        const [year, month, day] = e.target.value.split('-').map(Number);
-        newDate = new Date(year, month - 1, day);
+export function handleWeekChange(dateOrEvent) {
+    let picked;
+    if (dateOrEvent instanceof Date) {
+        picked = dateOrEvent;
+    } else if (dateOrEvent?.target?.value) {
+        const [yy, mm, dd] = dateOrEvent.target.value.split('-').map(Number);
+        picked = new Date(yy, mm - 1, dd);
+    } else {
+        return; // Nothing to do
     }
-
-    if (newDate && !isNaN(newDate)) {
-        currentViewDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
-        saveCurrentViewDate();
-        renderWeeklySchedule();
-    }
+    setCurrentViewDate(picked);
+    renderWeeklySchedule();
 }
+
 
 export function handlePrint() {
     window.print();
