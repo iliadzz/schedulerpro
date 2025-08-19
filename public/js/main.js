@@ -120,11 +120,13 @@ window.reinitializeDatePickers = function() {
             if (event) event.stopPropagation();
             var selectedDateStr = (calendar && calendar.context && calendar.context.selectedDates && calendar.context.selectedDates[0]) || null;
             if (selectedDateStr) {
-                var d = new Date(selectedDateStr + 'T00:00:00');
+                const [year, month, day] = selectedDateStr.split('-').map(Number);
+                var d = new Date(year, month - 1, day);
+
                 window.highlightWeekInCalendar(calendar, d, weekStartsOn());
                 window.updateWeekBadge(weekPickerContainer, d);
-                handleWeekChange({ target: { value: selectedDateStr } });
-                window.updatePickerButtonText(new Date(selectedDateStr));
+                handleWeekChange(d);
+                window.updatePickerButtonText(d);
                 calendar.hide();
                 if (weekPickerContainer) { weekPickerContainer.style.display = 'none'; }
             }

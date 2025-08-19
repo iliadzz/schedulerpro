@@ -103,9 +103,18 @@ export function handleThisWeek() {
 }
 
 export function handleWeekChange(e) {
-    if (e.target.value) {
+    let newDate;
+    if (e instanceof Date) {
+        // If a Date object is passed directly
+        newDate = e;
+    } else if (e.target && e.target.value) {
+        // If it's an event from an input, parse it carefully to avoid timezone issues
         const [year, month, day] = e.target.value.split('-').map(Number);
-        currentViewDate.setFullYear(year, month - 1, day);
+        newDate = new Date(year, month - 1, day);
+    }
+
+    if (newDate && !isNaN(newDate)) {
+        currentViewDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
         saveCurrentViewDate();
         renderWeeklySchedule();
     }
