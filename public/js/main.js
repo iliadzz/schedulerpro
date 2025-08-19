@@ -113,29 +113,19 @@ window.reinitializeDatePickers = function() {
     const calendar = new VanillaCalendar(weekPickerContainer, {
         firstWeekday: firstWeekday,
 
-        // --- FINAL FIX: Use the actions.clickDay handler ---
-        actions: {
-            clickDay(event, self) {
-                const dateCell = event.target.closest('[data-vc-date]');
-                if (!dateCell) return;
-    
-                const selectedDateStr = dateCell.dataset.vcDate;
-                if (!selectedDateStr) return;
-    
-                const [year, month, day] = selectedDateStr.split('-').map(Number);
-                const pickedDate = new Date(year, month - 1, day);
-    
-                window.highlightWeekInCalendar(calendar, pickedDate, weekStartsOn());
-                window.updateWeekBadge(weekPickerContainer, pickedDate);
-                handleWeekChange(pickedDate);
-                window.updatePickerButtonText(pickedDate);
-                self.hide();
-                if (weekPickerContainer) {
-                    weekPickerContainer.style.display = 'none';
-                }
-            }
-        },
+actions: {
+  clickDay(self, event) {
+    console.log("✅ clickDay fired", { self, event });
 
+    const dateCell = event?.target?.closest('[data-vc-date]');
+    if (!dateCell) {
+      console.warn("⚠️ No dateCell found", event?.target);
+      return;
+    }
+
+    console.log("📅 Selected date string:", dateCell.dataset.vcDate);
+  }
+}
         onClickTitle: (self, event) => {
             event.stopPropagation();
             const target = event.target;
