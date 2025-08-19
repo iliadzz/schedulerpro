@@ -135,34 +135,33 @@ try {
 
 Write-Host ""
 
-# Step 7: Extract commit hash and create backup
-Write-ColorOutput Yellow "Step 7: Creating backup with commit hash..."
+# Step 7: Get commit hash and create backup
+Write-ColorOutput Yellow "Step 7: Getting commit hash and creating backup..."
 
-# Extract the new commit hash from git push output
-$commitHash = ""
-$pushOutputString = $gitPushOutput -join "`n"
-
-# Look for pattern like "96a696f..b087794  main -> main" and extract the second hash
-$hashPattern = "([a-f0-9]{7,})\.\.([a-f0-9]{7,})\s+\w+\s*->\s*\w+"
-$hashMatch = [regex]::Match($pushOutputString, $hashPattern)
-
-if ($hashMatch.Success) {
-    $oldHash = $hashMatch.Groups[1].Value
-    $newHash = $hashMatch.Groups[2].Value
-    $commitHash = "${oldHash}_${newHash}"
-    Write-ColorOutput Green "Extracted commit hash: $commitHash"
-} else {
-    # Fallback: get current commit hash
-    Write-ColorOutput Cyan "Could not extract hash from push output, using current HEAD hash..."
-    $currentHash = & git rev-parse --short HEAD 2>&1
+# Get the current commit hash (short version)
+try {
+    $currentHash = (& git rev-parse --short HEAD 2>&1).Trim()
     if ($LASTEXITCODE -eq 0) {
-        $commitHash = "current_$currentHash"
-        Write-ColorOutput Green "Using current hash: $commitHash"
+        Write-ColorOutput Green "Current commit hash: $currentHash"
+        
+        # Get the previous commit hash for comparison
+        $previousHash = (& git rev-parse --short HEAD~1 2>&1).Trim()
+        if ($LASTEXITCODE -eq 0) {
+            $commitHash = "${previousHash}_${currentHash}"
+            Write-ColorOutput Green "Commit range: $commitHash"
+        } else {
+            $commitHash = "new_$currentHash"
+            Write-ColorOutput Cyan "Using current hash only: $commitHash"
+        }
     } else {
         Write-ColorOutput Yellow "Could not get commit hash, using timestamp instead..."
         $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
         $commitHash = "backup_$timestamp"
     }
+} catch {
+    Write-ColorOutput Yellow "Error getting commit hash, using timestamp instead..."
+    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $commitHash = "backup_$timestamp"
 }
 
 # Create backup directory if it doesn't exist
