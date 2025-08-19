@@ -15,8 +15,8 @@ import { renderWeeklySchedule, handlePrevWeek, handleNextWeek, handleThisWeek, h
 import { initSettingsTab, handleSaveSettings, handleFullBackup, handleRestoreFile } from './ui/settings.js';
 import { showEventsModal, handleSaveEvent, populateEventColorPalette, initEventListeners as initEventModalListeners } from './ui/events.js';
 import { showAddEmployeeModal, initModalListeners, initAssignShiftModalListeners, handleAssignShift } from './ui/modals.js';
-// --- NEW: Import VanillaCalendar ---
-import VanillaCalendar from '../vendor/Vanilla-calendar/index.mjs';
+// --- FIX: Use a named import for VanillaCalendar ---
+import { VanillaCalendar } from '../vendor/Vanilla-calendar/index.mjs';
 
 let isAppInitialized = false;
 
@@ -33,7 +33,6 @@ export function applyRbacPermissions() {
     document.documentElement.dataset.role = role.replace(/\s+/g, '-');
 }
 
-// This function will re-initialize the calendar. It needs to be accessible globally.
 window.reinitializeDatePickers = function() {
     const weekPickerBtn = document.getElementById('date-picker-trigger-btn');
     const weekPickerContainer = document.getElementById('date-picker-container');
@@ -118,7 +117,6 @@ window.reinitializeDatePickers = function() {
     updatePickerButtonText(currentViewDate);
 };
 
-
 // --- Application Entry Point ---
 window.__startApp = function() {
     if (isAppInitialized) {
@@ -130,7 +128,6 @@ window.__startApp = function() {
     initializeDataListeners();
     initializeSync();
 
-    // --- NEW: Initialize Vanilla Calendar Pro ---
     window.reinitializeDatePickers();
 
     populateRoleColorPalette();
