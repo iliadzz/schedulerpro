@@ -106,38 +106,31 @@ window.reinitializeDatePickers = function() {
         window.vanillaCalendar.destroy();
     }
 
-    const startMap = { sun: 7, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+    const startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
     const startDayKey = weekStartsOn();
     const firstWeekday = startMap[startDayKey] || 1;
 
     const calendar = new VanillaCalendar(weekPickerContainer, {
         firstWeekday: firstWeekday,
 
-        actions: {
-          clickDay(self, event) {
-            console.log("✅ clickDay fired", { self, event });
-
+        onClickDate(self, event) {
+            console.log("✅ onClickDate fired", { self, event });
             const dateCell = event?.target?.closest('[data-vc-date]');
             if (!dateCell) {
               console.warn("⚠️ No dateCell found", event?.target);
               return;
             }
-
             const selectedDateStr = dateCell.dataset.vcDate; // YYYY-MM-DD
             console.log("📅 Selected date string:", selectedDateStr);
-
             const [year, month, day] = selectedDateStr.split('-').map(Number);
             const pickedDate = new Date(year, month - 1, day);
-
-            window.highlightWeekInCalendar(calendar, pickedDate, weekStartsOn());
+            window.highlightWeekInCalendar(self, pickedDate, weekStartsOn());
             window.updateWeekBadge(weekPickerContainer, pickedDate);
             handleWeekChange(pickedDate);
             window.updatePickerButtonText(pickedDate);
-
             self.hide();
             if (weekPickerContainer) weekPickerContainer.style.display = 'none';
-          }
-        },  // <-- IMPORTANT: comma after actions
+          },  // <-- IMPORTANT: comma after actions
 
         onClickTitle: (self, event) => {
             event.stopPropagation();
@@ -169,7 +162,7 @@ window.reinitializeDatePickers = function() {
     calendar.init();
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
     window.updateWeekBadge(weekPickerContainer, currentViewDate);
-    window.updatePickerButtonText(currentViewDate);
+    window.window.updatePickerButtonText(currentViewDate);
     calendar.hide();
     if (weekPickerContainer) weekPickerContainer.style.display = 'none';
     window.vanillaCalendar = calendar;
@@ -198,7 +191,7 @@ window.reinitializeDatePickers = function() {
         }
     });
 
-    window.updatePickerButtonText(currentViewDate); // ensure global call
+    window.window.updatePickerButtonText(currentViewDate); // ensure global call
 };
 
 
