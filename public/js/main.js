@@ -342,7 +342,7 @@ window.reinitializeDatePickers = function() {
     // Re-attach document click listener for closing calendar
     // Remove old listener first to prevent duplicates
     const closeHandler = (e) => {
-        if (weekPickerContainer && !weekPickerContainer.contains(e.target) && e.target !== newBtn) {
+        if (weekPickerContainer && !weekPickerContainer.contains(e.target) && !newBtn.contains(e.target)) {
             calendar.hide();
             if (weekPickerContainer) {
                 weekPickerContainer.style.display = 'none';
