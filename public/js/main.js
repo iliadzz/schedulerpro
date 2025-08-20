@@ -145,12 +145,57 @@ window.reinitializeDatePickers = function() {
         },
 
         onClickMonth: (self, event) => {
-            event.stopPropagation();
+            vcLog('📆 onClickMonth fired');
+            // Try new attr (v3.0.5) then legacy
+            let monthIdx;
+            const mBtn = event?.target?.closest('[data-vc-months-month]') || event?.target?.closest('[data-vc-month]');
+            if (mBtn) {
+                monthIdx = Number(mBtn.dataset.vcMonthsMonth ?? mBtn.dataset.vcMonth);
+                vcLog('📅 Picked month index via event:', monthIdx);
+            } else {
+                vcWarn('⚠️ No month tile ancestor on event target');
+            }
+            if (!Number.isInteger(monthIdx)) {
+                if (typeof window.__vc_lastMonthIndex === 'number') {
+                    vcLog('↩️ Using last captured month index:', window.__vc_lastMonthIndex);
+                    monthIdx = window.__vc_lastMonthIndex;
+                }
+            }
+            // Resolve year
+            let year = (typeof window.__vc_pendingYear === 'number') ? window.__vc_pendingYear : undefined;
+            if (!Number.isInteger(year)) {
+                const hdrYearEl = weekPickerContainer?.querySelector('.vc-header [data-vc="year"]');
+                const parsed = hdrYearEl ? parseInt(hdrYearEl.textContent.trim(), 10) : NaN;
+                if (!Number.isNaN(parsed)) { year = parsed; vcLog('📌 Resolved year from header:', year); }
+            }
+            if (!Number.isInteger(year)) { year = new Date().getFullYear(); vcLog('🕒 Fallback year:', year); }
+            // Apply selection
+            if (Number.isInteger(monthIdx)) {
+                const d = new Date(year, monthIdx, 1);
+                const iso = d.toISOString().slice(0,10);
+                vcLog('✅ Setting selected month via ISO:', iso);
+                try { self.set({ selected: { dates: [iso] } }); } catch(e) { vcWarn('set(selected) failed', e); }
+            } else {
+                vcWarn('❌ Missing valid monthIdx; skipping selected set');
+            }
+            delete window.__vc_pendingYear;
             self.set({ type: 'default' });
         },
 
         onClickYear: (self, event) => {
-            event.stopPropagation();
+            vcLog('🗓️ onClickYear fired');
+            const yBtn = event?.target?.closest('[data-vc-years-year]') || event?.target?.closest('[data-vc-year]');
+            if (yBtn) {
+                const yr = parseInt((yBtn.dataset.vcYearsYear ?? yBtn.dataset.vcYear), 10);
+                if (!Number.isNaN(yr)) {
+                    window.__vc_pendingYear = yr;
+                    vcLog('📍 Captured pending year:', yr);
+                } else {
+                    vcWarn('⚠️ year dataset NaN');
+                }
+            } else {
+                vcWarn('⚠️ No year tile ancestor on event target');
+            }
             self.set({ type: 'month' });
         },
 
@@ -162,7 +207,7 @@ window.reinitializeDatePickers = function() {
     });
 
     
-    // Safety net: header month/year click handler in capture phase
+    // Safety net: header click forces type switch if callbacks fail
     try {
         const hdr = weekPickerContainer?.querySelector('.vc-header');
         if (hdr) {
@@ -177,6 +222,22 @@ window.reinitializeDatePickers = function() {
             }, true);
         }
     } catch (e) { vcWarn('header fallback attach failed', e); }
+
+    // Extra debug listener to capture month/year tile clicks (new & old attrs)
+    try {
+        if (VC_DEBUG && weekPickerContainer) {
+            weekPickerContainer.addEventListener('click', (ev) => {
+                const m = ev.target.closest('[data-vc-months-month]') || ev.target.closest('[data-vc-month]');
+                const y = ev.target.closest('[data-vc-years-year]') || ev.target.closest('[data-vc-year]');
+                if (m) { const mv = (m.dataset.vcMonthsMonth ?? m.dataset.vcMonth); vcLog('🛰️ Raw container click on month item', mv); window.__vc_lastMonthIndex = Number(mv); }
+                if (y) { const yv = (y.dataset.vcYearsYear ?? y.dataset.vcYear); vcLog('🛰️ Raw container click on year item', yv); window.__vc_lastYear = Number(yv); }
+                const hdrMonth = ev.target.closest('[data-vc="month"]');
+                const hdrYear = ev.target.closest('[data-vc="year"]');
+                if (hdrMonth) vcLog('🛰️ Raw header click: month');
+                if (hdrYear) vcLog('🛰️ Raw header click: year');
+            }, true);
+        }
+    } catch (e) { vcWarn('VC debug listener attach failed', e); }
 calendar.init();
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
     window.updateWeekBadge(weekPickerContainer, currentViewDate);
