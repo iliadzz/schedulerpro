@@ -83,8 +83,24 @@ import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mj
       btn.textContent = label;
       btn.style.color = '#fff';
     }
-  };
-})();
+  };};
+
+window.syncCalendarUI = function(date) {
+  try { window.updatePickerButtonText && window.updatePickerButtonText(date); } catch (_) {}
+  try {
+    if (typeof weekPickerContainer !== 'undefined' && window.vanillaCalendar) {
+      window.updateWeekBadge && window.updateWeekBadge(weekPickerContainer, date);
+      window.highlightWeekInCalendar && window.highlightWeekInCalendar(window.vanillaCalendar, date, weekStartsOn());
+      const iso = date.toISOString().slice(0,10);
+      window.vanillaCalendar.set({
+        selected: { dates: [iso] },
+        selectedMonth: date.getMonth(),
+        selectedYear: date.getFullYear(),
+      });
+    }
+  } catch (_) {}
+};
+)();
 // =============================================================================
 
 let isAppInitialized = false;
@@ -112,7 +128,7 @@ window.reinitializeDatePickers = function() {
 
     const startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
     const startDayKey = weekStartsOn();
-    const firstWeekday = startMap[startDayKey] ?? 1;
+    const firstWeekday = startMap[startDayKey] || 1;
 
     const calendar = new VanillaCalendar(weekPickerContainer, {
         enableJumpToSelectedDate: true,
@@ -163,7 +179,9 @@ window.reinitializeDatePickers = function() {
             handleWeekChange(pickedDate);
             window.updatePickerButtonText(pickedDate);
             try { self.hide(); } catch (e) { /* ignore */ }
-        if (weekPickerContainer) weekPickerContainer.style.display = 'none';
+        
+            try { window.syncCalendarUI && window.syncCalendarUI(pickedDate); } catch (_) {}
+if (weekPickerContainer) weekPickerContainer.style.display = 'none';
           },  // <-- IMPORTANT: comma after actions
 
         onClickTitle: (self, event) => {
@@ -338,6 +356,21 @@ window.__startApp = function() {
     dom.addShiftTemplateBtn.addEventListener('click', handleSaveShiftTemplate);
     dom.cancelEditShiftTemplateBtn.addEventListener('click', resetShiftTemplateForm);
     dom.prevWeekBtn.addEventListener('click', handlePrevWeek);
+
+    // Ensure NEXT is placed immediately to the right of the date picker trigger
+    try {
+      var dpBtn = document.getElementById('date-picker-trigger-btn');
+      var nextBtn = (dom && dom.nextWeekBtn) ? dom.nextWeekBtn : document.getElementById('next-week-btn');
+      if (dpBtn && nextBtn && dpBtn.parentNode && nextBtn.parentNode === dpBtn.parentNode) {
+        if (dpBtn.nextElementSibling !== nextBtn) {
+          dpBtn.parentNode.insertBefore(nextBtn, dpBtn.nextElementSibling);
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    if (dom.prevWeekBtn) dom.prevWeekBtn.addEventListener('click', function(){ setTimeout(function(){ window.syncCalendarUI && window.syncCalendarUI(currentViewDate); }, 0); });
+    if (dom.nextWeekBtn) dom.nextWeekBtn.addEventListener('click', function(){ setTimeout(function(){ window.syncCalendarUI && window.syncCalendarUI(currentViewDate); }, 0); });
+    if (dom.thisWeekBtn) dom.thisWeekBtn.addEventListener('click', function(){ setTimeout(function(){ window.syncCalendarUI && window.syncCalendarUI(currentViewDate); }, 0); });
     dom.nextWeekBtn.addEventListener('click', handleNextWeek);
     dom.thisWeekBtn.addEventListener('click', handleThisWeek);
 
