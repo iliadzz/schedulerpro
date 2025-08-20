@@ -145,7 +145,10 @@ window.reinitializeDatePickers = function() {
         },
 
         onClickMonth: (self, event) => {
+            // Keep the picker open + prevent outside handlers from closing it
+            try { event?.stopPropagation?.(); } catch(_) {}
             vcLog('📆 onClickMonth fired');
+
             // Try new attr (v3.0.5) then legacy
             let monthIdx;
             const mBtn = event?.target?.closest('[data-vc-months-month]') || event?.target?.closest('[data-vc-month]');
@@ -161,6 +164,7 @@ window.reinitializeDatePickers = function() {
                     monthIdx = window.__vc_lastMonthIndex;
                 }
             }
+
             // Resolve year
             let year = (typeof window.__vc_pendingYear === 'number') ? window.__vc_pendingYear : undefined;
             if (!Number.isInteger(year)) {
@@ -169,7 +173,8 @@ window.reinitializeDatePickers = function() {
                 if (!Number.isNaN(parsed)) { year = parsed; vcLog('📌 Resolved year from header:', year); }
             }
             if (!Number.isInteger(year)) { year = new Date().getFullYear(); vcLog('🕒 Fallback year:', year); }
-            // Apply selection
+
+            // Apply selection (1st of month) and switch back to days view
             if (Number.isInteger(monthIdx)) {
                 const d = new Date(year, monthIdx, 1);
                 const iso = d.toISOString().slice(0,10);
@@ -178,11 +183,18 @@ window.reinitializeDatePickers = function() {
             } else {
                 vcWarn('❌ Missing valid monthIdx; skipping selected set');
             }
+
+            // Clear pending year
             delete window.__vc_pendingYear;
-            self.set({ type: 'default' });
+
+            // Switch back to day grid but explicitly keep it visible
+            try { self.set({ type: 'default' }); } catch (e) { vcWarn('failed to set type default', e); }
+            try { self.show?.(); } catch (e) { vcWarn('self.show failed', e); }
+            try { if (weekPickerContainer) weekPickerContainer.style.display = ''; } catch (e) { /* noop */ }
         },
 
         onClickYear: (self, event) => {
+            try { event?.stopPropagation?.(); } catch(_) {}
             vcLog('🗓️ onClickYear fired');
             const yBtn = event?.target?.closest('[data-vc-years-year]') || event?.target?.closest('[data-vc-year]');
             if (yBtn) {
@@ -196,7 +208,9 @@ window.reinitializeDatePickers = function() {
             } else {
                 vcWarn('⚠️ No year tile ancestor on event target');
             }
-            self.set({ type: 'month' });
+            try { self.set({ type: 'month' }); } catch (e) { vcWarn('failed to set month view', e); }
+            try { self.show?.(); } catch (e) { vcWarn('self.show failed', e); }
+            try { if (weekPickerContainer) weekPickerContainer.style.display = ''; } catch (e) {}
         },
 
         settings: {
@@ -207,22 +221,6 @@ window.reinitializeDatePickers = function() {
     });
 
     
-    // Safety net: header click forces type switch if callbacks fail
-    try {
-        const hdr = weekPickerContainer?.querySelector('.vc-header');
-        if (hdr) {
-            hdr.addEventListener('click', (e) => {
-                if (e.target.closest('[data-vc="month"]')) {
-                    vcLog('🛟 Fallback header month click');
-                    try { calendar.set({ type: 'month' }); } catch (err) { vcWarn('fallback month set failed', err); }
-                } else if (e.target.closest('[data-vc="year"]')) {
-                    vcLog('🛟 Fallback header year click');
-                    try { calendar.set({ type: 'year' }); } catch (err) { vcWarn('fallback year set failed', err); }
-                }
-            }, true);
-        }
-    } catch (e) { vcWarn('header fallback attach failed', e); }
-
     // Extra debug listener to capture month/year tile clicks (new & old attrs)
     try {
         if (VC_DEBUG && weekPickerContainer) {
@@ -238,7 +236,30 @@ window.reinitializeDatePickers = function() {
             }, true);
         }
     } catch (e) { vcWarn('VC debug listener attach failed', e); }
-calendar.init();
+
+
+    // Safety net: header click forces type switch if callbacks fail
+    try {
+        const hdr = weekPickerContainer?.querySelector('.vc-header');
+        if (hdr) {
+            hdr.addEventListener('click', (e) => {
+                if (e.target.closest('[data-vc="month"]')) {
+                    vcLog('🛟 Fallback header month click');
+                    try { calendar.set({ type: 'month' }); } catch (err) { vcWarn('fallback month set failed', err); }
+                    try { calendar.show?.(); } catch (_) {}
+                    try { if (weekPickerContainer) weekPickerContainer.style.display = ''; } catch (_) {}
+                } else if (e.target.closest('[data-vc="year"]')) {
+                    vcLog('🛟 Fallback header year click');
+                    try { calendar.set({ type: 'year' }); } catch (err) { vcWarn('fallback year set failed', err); }
+                    try { calendar.show?.(); } catch (_) {}
+                    try { if (weekPickerContainer) weekPickerContainer.style.display = ''; } catch (_) {}
+                }
+            }, true);
+        }
+    } catch (e) { vcWarn('header fallback attach failed', e); }
+
+    calendar.init();
+        
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
     window.updateWeekBadge(weekPickerContainer, currentViewDate);
     window.window.updatePickerButtonText(currentViewDate);
