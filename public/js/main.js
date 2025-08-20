@@ -100,7 +100,7 @@ window.syncCalendarUI = function(date) {
     }
   } catch (_) {}
 };
-)();
+})();
 // =============================================================================
 
 let isAppInitialized = false;
