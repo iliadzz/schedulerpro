@@ -117,78 +117,31 @@ window.reinitializeDatePickers = function() {
     const calendar = new VanillaCalendar(weekPickerContainer, {
         firstWeekday: firstWeekday,
 
-        onClickDate(self, event) {
-            vcLog('✅ onClickDate fired');
+        actions: {
+          clickDay(self, event) {
+            console.log("✅ clickDay fired", { self, event });
+
             const dateCell = event?.target?.closest('[data-vc-date]');
-            if (!dateCell) { vcWarn('⚠️ No [data-vc-date] cell'); return; }
-
-            const offsetKey = dateCell.dataset.vcDateMonth; // 'prev' | 'current' | 'next'
-            let offset = 0;
-            if (offsetKey === 'prev') offset = -1;
-            if (offsetKey === 'next') offset = 1;
-
-            // Try to use internal context first
-            let dispYear = undefined, dispMonth = undefined;
-            try {
-              dispYear = self?.context?.displayYear;
-              dispMonth = self?.context?.displayMonth;
-            } catch (e) { /* ignore */ }
-
-            // Fallback 1: forced month/year saved at onClickMonth
-            if (!Number.isInteger(dispYear) || !Number.isInteger(dispMonth)) {
-              const f = window.__vc_forcedMonthYear;
-              if (f && Number.isInteger(f.year) && Number.isInteger(f.monthIdx)) {
-                dispYear = f.year;
-                dispMonth = f.monthIdx;
-                vcLog('📦 Using forcedMonthYear fallback:', f);
-              }
+            if (!dateCell) {
+              console.warn("⚠️ No dateCell found", event?.target);
+              return;
             }
 
-            // Fallback 2: derive from any "current" cell's dataset.vcDate
-            if (!Number.isInteger(dispYear) || !Number.isInteger(dispMonth)) {
-              const currCell = weekPickerContainer?.querySelector('[data-vc-date-month="current"][data-vc-date]');
-              const raw = currCell?.dataset?.vcDate;
-              if (raw) {
-                const [cy, cm] = raw.split('-').map(Number);
-                dispYear = cy; dispMonth = cm - 1;
-                vcLog('🔎 Derived y/m from current cell:', dispYear, dispMonth);
-              }
-            }
+            const selectedDateStr = dateCell.dataset.vcDate; // YYYY-MM-DD
+            console.log("📅 Selected date string:", selectedDateStr);
 
-            // Extract the day number from the clicked cell
-            let dayNum = NaN;
-            const btn = dateCell.querySelector('[data-vc-date-btn]') || dateCell;
-            if (btn && btn.textContent) { dayNum = parseInt(btn.textContent.trim(), 10); }
-            vcLog('📖 displayYear/displayMonth:', dispYear, dispMonth, 'offset:', offset, 'dayNum:', dayNum);
+            const [year, month, day] = selectedDateStr.split('-').map(Number);
+            const pickedDate = new Date(year, month - 1, day);
 
-            let pickedDate;
-            if (Number.isInteger(dispYear) && Number.isInteger(dispMonth) && Number.isInteger(dayNum)) {
-              let m = dispMonth + offset;
-              let y = dispYear;
-              if (m < 0) { m = 11; y--; }
-              if (m > 11) { m = 0;  y++; }
-              pickedDate = new Date(y, m, dayNum);
-              vcLog('🧮 Computed pickedDate:', pickedDate.toISOString());
-            } else {
-              // Final fallback
-              const raw = dateCell.dataset.vcDate;
-              if (!raw) { vcWarn('❌ No dataset.vcDate to fall back to'); return; }
-              vcWarn('↩️ Falling back to dataset.vcDate:', raw);
-              const [year, month, day] = raw.split('-').map(Number);
-              pickedDate = new Date(year, month - 1, day);
-            }
-
-            // Clear forced month/year after a successful day pick to avoid stale values
-            try { delete window.__vc_forcedMonthYear; } catch (_) {}
-
-            // Continue with your existing workflow
-            window.highlightWeekInCalendar(self, pickedDate, weekStartsOn());
+            window.highlightWeekInCalendar(calendar, pickedDate, weekStartsOn());
             window.updateWeekBadge(weekPickerContainer, pickedDate);
             handleWeekChange(pickedDate);
             window.updatePickerButtonText(pickedDate);
-            try { self.hide(); } catch (e) { /* ignore */ }
-        if (weekPickerContainer) weekPickerContainer.style.display = 'none';
-          },  // <-- IMPORTANT: comma after actions
+
+            self.hide();
+            if (weekPickerContainer) weekPickerContainer.style.display = 'none';
+          }
+        },  // <-- IMPORTANT: comma after actions
 
         onClickTitle: (self, event) => {
             event.stopPropagation();
@@ -216,6 +169,41 @@ window.reinitializeDatePickers = function() {
             selected: { dates: [ currentViewDate.toISOString().substring(0, 10) ] }
         }
     });
+
+    calendar.init();
+    window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
+    window.updateWeekBadge(weekPickerContainer, currentViewDate);
+    window.updatePickerButtonText(currentViewDate);
+    calendar.hide();
+    if (weekPickerContainer) weekPickerContainer.style.display = 'none';
+    window.vanillaCalendar = calendar;
+
+    if (weekPickerBtn) {
+        weekPickerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (weekPickerContainer) {
+                const isVisible = weekPickerContainer.style.display === 'block';
+                weekPickerContainer.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    window.updateWeekBadge(weekPickerContainer, currentViewDate);
+                    window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
+                    calendar.show();
+                } else {
+                    calendar.hide();
+                }
+            }
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (weekPickerContainer && !weekPickerContainer.contains(e.target) && e.target !== weekPickerBtn) {
+            calendar.hide();
+            if (weekPickerContainer) weekPickerContainer.style.display = 'none';
+        }
+    });
+
+    window.updatePickerButtonText(currentViewDate); // ensure global call
+};
 
     calendar.init();
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
