@@ -83,7 +83,7 @@ import { Calendar as VanillaCalendar } from '../vendor/Vanilla-calendar/index.mj
       btn.textContent = label;
       btn.style.color = '#fff';
     }
-  };};
+  };
 
 window.syncCalendarUI = function(date) {
   try { window.updatePickerButtonText && window.updatePickerButtonText(date); } catch (_) {}
