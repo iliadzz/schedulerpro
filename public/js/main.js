@@ -118,23 +118,60 @@ window.reinitializeDatePickers = function() {
         firstWeekday: firstWeekday,
 
         onClickDate(self, event) {
+            vcLog('✅ onClickDate fired');
             const dateCell = event?.target?.closest('[data-vc-date]');
             if (!dateCell) {
+              vcWarn('⚠️ No [data-vc-date] cell');
               return;
             }
-            const selectedDateStr = dateCell.dataset.vcDate; // YYYY-MM-DD
-            const [year, month, day] = selectedDateStr.split('-').map(Number);
-            const pickedDate = new Date(year, month - 1, day);
+
+            // Prefer computing from displayYear/displayMonth + offset (prev/current/next)
+            const offsetKey = dateCell.dataset.vcDateMonth; // 'prev' | 'current' | 'next'
+            let offset = 0;
+            if (offsetKey === 'prev') offset = -1;
+            if (offsetKey === 'next') offset = 1;
+
+            let dispYear = undefined, dispMonth = undefined;
+            try {
+              dispYear = self?.context?.displayYear;
+              dispMonth = self?.context?.displayMonth;
+            } catch (e) { /* ignore */ }
+
+            // Extract day number from the button text (inside the cell)
+            let dayNum = NaN;
+            const btn = dateCell.querySelector('[data-vc-date-btn]') || dateCell;
+            if (btn && btn.textContent) {
+              dayNum = parseInt(btn.textContent.trim(), 10);
+            }
+            vcLog('📖 displayYear/displayMonth:', dispYear, dispMonth, 'offset:', offset, 'dayNum:', dayNum);
+
+            let pickedDate;
+            if (Number.isInteger(dispYear) && Number.isInteger(dispMonth) && Number.isInteger(dayNum)) {
+              let m = dispMonth + offset;
+              let y = dispYear;
+              if (m < 0) { m = 11; y--; }
+              if (m > 11) { m = 0;  y++; }
+              pickedDate = new Date(y, m, dayNum);
+              vcLog('🧮 Computed pickedDate:', pickedDate.toISOString());
+            } else {
+              // Fallback to dataset.vcDate if for some reason display context is unavailable
+              const raw = dateCell.dataset.vcDate;
+              if (!raw) { vcWarn('❌ No dataset.vcDate to fall back to'); return; }
+              vcWarn('↩️ Falling back to dataset.vcDate:', raw);
+              const [year, month, day] = raw.split('-').map(Number);
+              pickedDate = new Date(year, month - 1, day);
+            }
+
+            // Continue with your existing workflow
             window.highlightWeekInCalendar(self, pickedDate, weekStartsOn());
             window.updateWeekBadge(weekPickerContainer, pickedDate);
             handleWeekChange(pickedDate);
             window.updatePickerButtonText(pickedDate);
-            self.hide();
-            if (weekPickerContainer) weekPickerContainer.style.display = 'none';
+            try { self.hide(); } catch (e) { /* ignore */ }
+        if (weekPickerContainer) weekPickerContainer.style.display = 'none';
           },  // <-- IMPORTANT: comma after actions
 
         onClickTitle: (self, event) => {
-            vcLog('⏫ onClickTitle fired');
             event.stopPropagation();
             const target = event.target;
             if (target.closest('[data-vc="month"]')) {
@@ -145,27 +182,20 @@ window.reinitializeDatePickers = function() {
         },
 
         onClickMonth: (self, event) => {
-            // Keep the picker open + prevent outside handlers from closing it
             try { event?.stopPropagation?.(); } catch(_) {}
             vcLog('📆 onClickMonth fired');
-
-            // Try new attr (v3.0.5) then legacy
             let monthIdx;
             const mBtn = event?.target?.closest('[data-vc-months-month]') || event?.target?.closest('[data-vc-month]');
             if (mBtn) {
                 monthIdx = Number(mBtn.dataset.vcMonthsMonth ?? mBtn.dataset.vcMonth);
                 vcLog('📅 Picked month index via event:', monthIdx);
+            } else if (typeof window.__vc_lastMonthIndex === 'number') {
+                monthIdx = window.__vc_lastMonthIndex;
+                vcLog('↩️ Using last captured month index:', monthIdx);
             } else {
-                vcWarn('⚠️ No month tile ancestor on event target');
+                vcWarn('❌ Unable to determine month index');
             }
-            if (!Number.isInteger(monthIdx)) {
-                if (typeof window.__vc_lastMonthIndex === 'number') {
-                    vcLog('↩️ Using last captured month index:', window.__vc_lastMonthIndex);
-                    monthIdx = window.__vc_lastMonthIndex;
-                }
-            }
-
-            // Resolve year
+            // Resolve year (pending -> header -> now)
             let year = (typeof window.__vc_pendingYear === 'number') ? window.__vc_pendingYear : undefined;
             if (!Number.isInteger(year)) {
                 const hdrYearEl = weekPickerContainer?.querySelector('.vc-header [data-vc="year"]');
@@ -174,23 +204,15 @@ window.reinitializeDatePickers = function() {
             }
             if (!Number.isInteger(year)) { year = new Date().getFullYear(); vcLog('🕒 Fallback year:', year); }
 
-            // Apply selection (1st of month) and switch back to days view
             if (Number.isInteger(monthIdx)) {
                 const d = new Date(year, monthIdx, 1);
                 const iso = d.toISOString().slice(0,10);
                 vcLog('✅ Setting selected month via ISO:', iso);
                 try { self.set({ selected: { dates: [iso] } }); } catch(e) { vcWarn('set(selected) failed', e); }
-            } else {
-                vcWarn('❌ Missing valid monthIdx; skipping selected set');
             }
-
-            // Clear pending year
             delete window.__vc_pendingYear;
 
-            // Switch back to day grid but explicitly keep it visible
             try { self.set({ type: 'default' }); } catch (e) { vcWarn('failed to set type default', e); }
-            try { self.show?.(); } catch (e) { vcWarn('self.show failed', e); }
-            try { if (weekPickerContainer) weekPickerContainer.style.display = ''; } catch (e) { /* noop */ }
         },
 
         onClickYear: (self, event) => {
@@ -209,8 +231,6 @@ window.reinitializeDatePickers = function() {
                 vcWarn('⚠️ No year tile ancestor on event target');
             }
             try { self.set({ type: 'month' }); } catch (e) { vcWarn('failed to set month view', e); }
-            try { self.show?.(); } catch (e) { vcWarn('self.show failed', e); }
-            try { if (weekPickerContainer) weekPickerContainer.style.display = ''; } catch (e) {}
         },
 
         settings: {
@@ -221,7 +241,6 @@ window.reinitializeDatePickers = function() {
     });
 
     
-    // Extra debug listener to capture month/year tile clicks (new & old attrs)
     try {
         if (VC_DEBUG && weekPickerContainer) {
             weekPickerContainer.addEventListener('click', (ev) => {
@@ -236,28 +255,6 @@ window.reinitializeDatePickers = function() {
             }, true);
         }
     } catch (e) { vcWarn('VC debug listener attach failed', e); }
-
-
-    // Safety net: header click forces type switch if callbacks fail
-    try {
-        const hdr = weekPickerContainer?.querySelector('.vc-header');
-        if (hdr) {
-            hdr.addEventListener('click', (e) => {
-                if (e.target.closest('[data-vc="month"]')) {
-                    vcLog('🛟 Fallback header month click');
-                    try { calendar.set({ type: 'month' }); } catch (err) { vcWarn('fallback month set failed', err); }
-                    try { calendar.show?.(); } catch (_) {}
-                    try { if (weekPickerContainer) weekPickerContainer.style.display = ''; } catch (_) {}
-                } else if (e.target.closest('[data-vc="year"]')) {
-                    vcLog('🛟 Fallback header year click');
-                    try { calendar.set({ type: 'year' }); } catch (err) { vcWarn('fallback year set failed', err); }
-                    try { calendar.show?.(); } catch (_) {}
-                    try { if (weekPickerContainer) weekPickerContainer.style.display = ''; } catch (_) {}
-                }
-            }, true);
-        }
-    } catch (e) { vcWarn('header fallback attach failed', e); }
-
     calendar.init();
         
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
