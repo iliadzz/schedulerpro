@@ -120,29 +120,45 @@ window.reinitializeDatePickers = function() {
         onClickDate(self, event) {
             vcLog('✅ onClickDate fired');
             const dateCell = event?.target?.closest('[data-vc-date]');
-            if (!dateCell) {
-              vcWarn('⚠️ No [data-vc-date] cell');
-              return;
-            }
+            if (!dateCell) { vcWarn('⚠️ No [data-vc-date] cell'); return; }
 
-            // Prefer computing from displayYear/displayMonth + offset (prev/current/next)
             const offsetKey = dateCell.dataset.vcDateMonth; // 'prev' | 'current' | 'next'
             let offset = 0;
             if (offsetKey === 'prev') offset = -1;
             if (offsetKey === 'next') offset = 1;
 
+            // Try to use internal context first
             let dispYear = undefined, dispMonth = undefined;
             try {
               dispYear = self?.context?.displayYear;
               dispMonth = self?.context?.displayMonth;
             } catch (e) { /* ignore */ }
 
-            // Extract day number from the button text (inside the cell)
+            // Fallback 1: forced month/year saved at onClickMonth
+            if (!Number.isInteger(dispYear) || !Number.isInteger(dispMonth)) {
+              const f = window.__vc_forcedMonthYear;
+              if (f && Number.isInteger(f.year) && Number.isInteger(f.monthIdx)) {
+                dispYear = f.year;
+                dispMonth = f.monthIdx;
+                vcLog('📦 Using forcedMonthYear fallback:', f);
+              }
+            }
+
+            // Fallback 2: derive from any "current" cell's dataset.vcDate
+            if (!Number.isInteger(dispYear) || !Number.isInteger(dispMonth)) {
+              const currCell = weekPickerContainer?.querySelector('[data-vc-date-month="current"][data-vc-date]');
+              const raw = currCell?.dataset?.vcDate;
+              if (raw) {
+                const [cy, cm] = raw.split('-').map(Number);
+                dispYear = cy; dispMonth = cm - 1;
+                vcLog('🔎 Derived y/m from current cell:', dispYear, dispMonth);
+              }
+            }
+
+            // Extract the day number from the clicked cell
             let dayNum = NaN;
             const btn = dateCell.querySelector('[data-vc-date-btn]') || dateCell;
-            if (btn && btn.textContent) {
-              dayNum = parseInt(btn.textContent.trim(), 10);
-            }
+            if (btn && btn.textContent) { dayNum = parseInt(btn.textContent.trim(), 10); }
             vcLog('📖 displayYear/displayMonth:', dispYear, dispMonth, 'offset:', offset, 'dayNum:', dayNum);
 
             let pickedDate;
@@ -154,13 +170,16 @@ window.reinitializeDatePickers = function() {
               pickedDate = new Date(y, m, dayNum);
               vcLog('🧮 Computed pickedDate:', pickedDate.toISOString());
             } else {
-              // Fallback to dataset.vcDate if for some reason display context is unavailable
+              // Final fallback
               const raw = dateCell.dataset.vcDate;
               if (!raw) { vcWarn('❌ No dataset.vcDate to fall back to'); return; }
               vcWarn('↩️ Falling back to dataset.vcDate:', raw);
               const [year, month, day] = raw.split('-').map(Number);
               pickedDate = new Date(year, month - 1, day);
             }
+
+            // Clear forced month/year after a successful day pick to avoid stale values
+            try { delete window.__vc_forcedMonthYear; } catch (_) {}
 
             // Continue with your existing workflow
             window.highlightWeekInCalendar(self, pickedDate, weekStartsOn());
@@ -182,55 +201,13 @@ window.reinitializeDatePickers = function() {
         },
 
         onClickMonth: (self, event) => {
-            try { event?.stopPropagation?.(); } catch(_) {}
-            vcLog('📆 onClickMonth fired');
-            let monthIdx;
-            const mBtn = event?.target?.closest('[data-vc-months-month]') || event?.target?.closest('[data-vc-month]');
-            if (mBtn) {
-                monthIdx = Number(mBtn.dataset.vcMonthsMonth ?? mBtn.dataset.vcMonth);
-                vcLog('📅 Picked month index via event:', monthIdx);
-            } else if (typeof window.__vc_lastMonthIndex === 'number') {
-                monthIdx = window.__vc_lastMonthIndex;
-                vcLog('↩️ Using last captured month index:', monthIdx);
-            } else {
-                vcWarn('❌ Unable to determine month index');
-            }
-            // Resolve year (pending -> header -> now)
-            let year = (typeof window.__vc_pendingYear === 'number') ? window.__vc_pendingYear : undefined;
-            if (!Number.isInteger(year)) {
-                const hdrYearEl = weekPickerContainer?.querySelector('.vc-header [data-vc="year"]');
-                const parsed = hdrYearEl ? parseInt(hdrYearEl.textContent.trim(), 10) : NaN;
-                if (!Number.isNaN(parsed)) { year = parsed; vcLog('📌 Resolved year from header:', year); }
-            }
-            if (!Number.isInteger(year)) { year = new Date().getFullYear(); vcLog('🕒 Fallback year:', year); }
-
-            if (Number.isInteger(monthIdx)) {
-                const d = new Date(year, monthIdx, 1);
-                const iso = d.toISOString().slice(0,10);
-                vcLog('✅ Setting selected month via ISO:', iso);
-                try { self.set({ selected: { dates: [iso] } }); } catch(e) { vcWarn('set(selected) failed', e); }
-            }
-            delete window.__vc_pendingYear;
-
-            try { self.set({ type: 'default' }); } catch (e) { vcWarn('failed to set type default', e); }
+            event.stopPropagation();
+            self.set({ type: 'default' });
         },
 
         onClickYear: (self, event) => {
-            try { event?.stopPropagation?.(); } catch(_) {}
-            vcLog('🗓️ onClickYear fired');
-            const yBtn = event?.target?.closest('[data-vc-years-year]') || event?.target?.closest('[data-vc-year]');
-            if (yBtn) {
-                const yr = parseInt((yBtn.dataset.vcYearsYear ?? yBtn.dataset.vcYear), 10);
-                if (!Number.isNaN(yr)) {
-                    window.__vc_pendingYear = yr;
-                    vcLog('📍 Captured pending year:', yr);
-                } else {
-                    vcWarn('⚠️ year dataset NaN');
-                }
-            } else {
-                vcWarn('⚠️ No year tile ancestor on event target');
-            }
-            try { self.set({ type: 'month' }); } catch (e) { vcWarn('failed to set month view', e); }
+            event.stopPropagation();
+            self.set({ type: 'month' });
         },
 
         settings: {
@@ -240,23 +217,7 @@ window.reinitializeDatePickers = function() {
         }
     });
 
-    
-    try {
-        if (VC_DEBUG && weekPickerContainer) {
-            weekPickerContainer.addEventListener('click', (ev) => {
-                const m = ev.target.closest('[data-vc-months-month]') || ev.target.closest('[data-vc-month]');
-                const y = ev.target.closest('[data-vc-years-year]') || ev.target.closest('[data-vc-year]');
-                if (m) { const mv = (m.dataset.vcMonthsMonth ?? m.dataset.vcMonth); vcLog('🛰️ Raw container click on month item', mv); window.__vc_lastMonthIndex = Number(mv); }
-                if (y) { const yv = (y.dataset.vcYearsYear ?? y.dataset.vcYear); vcLog('🛰️ Raw container click on year item', yv); window.__vc_lastYear = Number(yv); }
-                const hdrMonth = ev.target.closest('[data-vc="month"]');
-                const hdrYear = ev.target.closest('[data-vc="year"]');
-                if (hdrMonth) vcLog('🛰️ Raw header click: month');
-                if (hdrYear) vcLog('🛰️ Raw header click: year');
-            }, true);
-        }
-    } catch (e) { vcWarn('VC debug listener attach failed', e); }
     calendar.init();
-        
     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
     window.updateWeekBadge(weekPickerContainer, currentViewDate);
     window.window.updatePickerButtonText(currentViewDate);
