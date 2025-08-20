@@ -142,7 +142,7 @@ window.reinitializeDatePickers = function() {
     // --- FIX: Correct mapping for firstWeekday. Vanilla Calendar uses 0 for Sunday. ---
     const startMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
     const startDayKey = weekStartsOn();
-    const firstWeekday = startMap[startDayKey] || 1; // Default to Monday if key is invalid
+    const firstWeekday = startMap[startDayKey] === 0 ? 0 : (startMap[startDayKey] || 1);
     
     vcLog(`📅 Creating new calendar with firstWeekday: ${firstWeekday} for '${startDayKey}'`);
 
