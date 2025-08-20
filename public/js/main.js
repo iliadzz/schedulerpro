@@ -355,7 +355,37 @@ window.reinitializeDatePickers = function() {
         document.removeEventListener('click', window.__calendarCloseHandler);
     }
     window.__calendarCloseHandler = closeHandler;
-    document.addEventListener('click', closeHandler);
+    
+// tie calendar root (best-effort)
+const calRoot = (calendar && calendar.HTML) ? calendar.HTML : document.querySelector('.vanilla-calendar');
+
+// === VC robust open/close guards ===
+let __vcJustOpened = false;
+function __vcMarkJustOpened() { __vcJustOpened = true; setTimeout(() => { __vcJustOpened = false; }, 120); }
+function __vcShowCalendar(calendar, calRoot) {
+  if (!calendar) return;
+  if (typeof calendar.show === 'function') calendar.show();
+  if (calRoot) {
+    try {
+      calRoot.classList && calRoot.classList.remove('vanilla-calendar_hidden','is-hidden','hidden');
+      calRoot.style && (calRoot.style.display = 'block', calRoot.style.visibility = 'visible', calRoot.style.opacity = '1');
+    } catch {}
+  }
+  __vcMarkJustOpened();
+  try { console.log('[VC] ✅ Forced visible.'); } catch {}
+}
+function __vcMakeDocClickHandler(calendar, btn, calEl) {
+  return function(e) {
+    if (__vcJustOpened) return;
+    const inBtn = btn && btn.contains && btn.contains(e.target);
+    const inCal = calEl && calEl.contains && calEl.contains(e.target);
+    if (!inBtn && !inCal) {
+      try { typeof calendar.hide === 'function' && calendar.hide(); } catch {}
+      try { if (calEl && calEl.style) calEl.style.display = 'none'; } catch {}
+    }
+  };
+}
+document.addEventListener('click', closeHandler);
 
     window.updatePickerButtonText(currentViewDate);
     vcLog('✅ Date picker reinitialization complete');
