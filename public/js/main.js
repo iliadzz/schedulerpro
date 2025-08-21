@@ -657,3 +657,108 @@ window.__startApp = function() {
 
 // --- Initialize Auth ---
 setupAuthListeners();
+
+
+/* ===== VC ultra-stable bootstrap (appended) ===== */
+(function(){
+  const LOG_PREFIX = '[VC-BS]';
+  let tries = 0;
+  let maxTries = 80; // ~24s at 300ms
+  let bound = false;
+
+  function getBtn(){
+    return document.getElementById('date-picker-trigger-btn')
+        || document.getElementById('week-picker-btn')
+        || document.querySelector('[data-vc-toggle]');
+  }
+  function getCal(){
+    try { if (window.calendar && window.calendar.HTML) return window.calendar.HTML; } catch {}
+    return document.querySelector('.vanilla-calendar');
+  }
+  function ensureDocHandler(){
+    if (window.__vcDocHandler_appended) return;
+    window.__vcDocHandler_appended = function(e){
+      if (window.__vcIgnoreOnce) { console.log(LOG_PREFIX, 'ignored first doc click'); return; }
+      const btn = getBtn();
+      const cal = getCal();
+      const inBtn = !!(btn && btn.contains(e.target));
+      const inCal = !!(cal && cal.contains(e.target));
+      if (!inBtn && !inCal && window.__vcOpen) {
+        try { window.calendar && typeof window.calendar.hide==='function' && window.calendar.hide(); } catch {}
+        if (cal) {
+          cal.style.display='none'; cal.style.visibility='hidden'; cal.style.opacity='0';
+        }
+        window.__vcOpen = false;
+        console.log(LOG_PREFIX, 'closed by outside-click');
+      }
+    };
+    document.addEventListener('click', window.__vcDocHandler_appended, false);
+    console.log(LOG_PREFIX, 'doc handler attached');
+  }
+
+  function bind(){
+    const btn = getBtn();
+    if (!btn) { console.log(LOG_PREFIX, 'no button yet'); return false; }
+    if (btn.__vcClickHandler_appended) { console.log(LOG_PREFIX, 'button already bound'); return true; }
+
+    btn.__vcClickHandler_appended = function(e){
+      e.preventDefault(); e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      const cal = getCal();
+      console.log(LOG_PREFIX, 'button clicked; open=', !!window.__vcOpen, 'btn=', !!btn, 'cal=', !!cal);
+      if (!window.__vcOpen) {
+        try { window.calendar && typeof window.calendar.show==='function' && window.calendar.show(); } catch {}
+        if (cal) {
+          cal.classList && cal.classList.remove('vanilla-calendar_hidden','hidden','is-hidden');
+          cal.style.display='block'; cal.style.visibility='visible'; cal.style.opacity='1';
+          try {
+            const cs=getComputedStyle(cal), r=cal.getBoundingClientRect();
+            console.log(LOG_PREFIX, 'OPEN: display=', cs.display, 'vis=', cs.visibility, 'op=', cs.opacity, 'rect=', r.width, r.height);
+          } catch {}
+        }
+        window.__vcOpen = true;
+        window.__vcIgnoreOnce = true; setTimeout(()=>window.__vcIgnoreOnce=false,0);
+        console.log(LOG_PREFIX, 'opened');
+      } else {
+        try { window.calendar && typeof window.calendar.hide==='function' && window.calendar.hide(); } catch {}
+        if (cal) {
+          cal.style.display='none'; cal.style.visibility='hidden'; cal.style.opacity='0';
+        }
+        window.__vcOpen = false;
+        console.log(LOG_PREFIX, 'closed by button');
+      }
+    };
+    btn.addEventListener('click', btn.__vcClickHandler_appended, false);
+    btn.__vcBindCount_appended = (btn.__vcBindCount_appended || 0) + 1;
+    console.log(LOG_PREFIX, 'button bound x', btn.__vcBindCount_appended);
+    return true;
+  }
+
+  function tick(){
+    if (bound) return;
+    tries++;
+    bound = bind();
+    if (bound) {
+      ensureDocHandler();
+      // normalize starting state
+      window.__vcOpen = false;
+      window.__vcIgnoreOnce = false;
+      const cal = getCal();
+      if (cal) { cal.style.display='none'; cal.style.visibility='hidden'; cal.style.opacity='0'; }
+      console.log(LOG_PREFIX, 'bootstrap complete');
+      return;
+    }
+    if (tries >= maxTries) {
+      console.warn(LOG_PREFIX, 'gave up binding after', tries, 'tries');
+      return;
+    }
+    setTimeout(tick, 300);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tick, { once: true });
+  } else {
+    tick();
+  }
+})(); 
+/* ===== end VC ultra-stable bootstrap ===== */
