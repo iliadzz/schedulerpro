@@ -127,23 +127,7 @@
 
 // [VC] removed legacy robust v2 block (handled by stable helpers)
 
-function __vcBindBtn(calendar){
-  const { btn } = __vcGetRoots();
-  if (!btn) return;
-  // Remove any pre-existing toggle to avoid double-binding
-  if (btn.__vcClickHandler) {
-    btn.removeEventListener('click', btn.__vcClickHandler, true);
-  }
-  btn.__vcClickHandler = function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-    console.log('[VC] 📍 Button clicked');
-    window.__vcOpen || /* removed duplicate show */
-  };
-  btn.addEventListener('click', btn.__vcClickHandler, true);
-  console.log('[VC] 🔗 Button handler (re)bound');
-}
+// [VC] removed obsolete __vcBindBtn(calendar) block (handled by stable helpers)
 // js/main.js
 const VC_DEBUG = true;
 function vcLog(...args){ if(VC_DEBUG) console.log('[VC]', ...args); }
