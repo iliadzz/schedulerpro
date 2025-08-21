@@ -14,10 +14,10 @@ function __vcGetRoots() {
 
 function __vcMarkJustOpened(){ __vcJustOpened = true; setTimeout(() => { __vcJustOpened = false; }, 120); }
 
-function __vcShowCalendar(calendar){
+function __vcShowCalendar(calendar) {
   const { cal } = __vcGetRoots();
   if (!calendar) return;
-  try { typeof calendar.show === 'function' && __vcShowCalendar(calendar); } catch {}
+  try { typeof calendar.show === 'function' && window.__vcOpen || __vcShowCalendar(calendar); window.__vcOpen = true; } catch {}
   if (cal) {
     try {
       cal.classList.remove('vanilla-calendar_hidden','is-hidden','hidden');
@@ -46,7 +46,7 @@ function __vcAttachDocHandler(calendar){
     const inBtn = btn && btn.contains && btn.contains(e.target);
     const inCal = cal && cal.contains && cal.contains(e.target);
     if (!inBtn && !inCal) {
-      try { typeof calendar.hide === 'function' && calendar.hide(); } catch {}
+      try { typeof calendar.hide === 'function' && calendar.hide(); window.__vcOpen = false; } catch {}
       try { if (cal && cal.style) cal.style.display = 'none'; } catch {}
     }
   };
@@ -66,7 +66,7 @@ function __vcBindBtn(calendar){
     e.stopPropagation();
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     console.log('[VC] 📍 Button clicked');
-    __vcShowCalendar(calendar);
+    window.__vcOpen || __vcShowCalendar(calendar); window.__vcOpen = true;
   };
   btn.addEventListener('click', btn.__vcClickHandler, true);
   console.log('[VC] 🔗 Button handler (re)bound');
@@ -402,7 +402,7 @@ window.reinitializeDatePickers = function() {
                 if (!isVisible) {
                     window.updateWeekBadge(weekPickerContainer, currentViewDate);
                     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
-                    __vcShowCalendar(calendar);
+                    window.__vcOpen || __vcShowCalendar(calendar); window.__vcOpen = true;
                     vcLog('📅 Calendar shown');
                 } else {
                     calendar.hide();
@@ -437,7 +437,7 @@ let __vcJustOpened = false;
 function __vcMarkJustOpened() { __vcJustOpened = true; setTimeout(() => { __vcJustOpened = false; }, 120); }
 function __vcShowCalendar(calendar, calRoot) {
   if (!calendar) return;
-  if (typeof calendar.show === 'function') __vcShowCalendar(calendar);
+  if (typeof calendar.show === 'function') window.__vcOpen || __vcShowCalendar(calendar); window.__vcOpen = true;
   if (calRoot) {
     try {
       calRoot.classList && calRoot.classList.remove('vanilla-calendar_hidden','is-hidden','hidden');
@@ -453,7 +453,7 @@ function __vcMakeDocClickHandler(calendar, btn, calEl) {
     const inBtn = btn && btn.contains && btn.contains(e.target);
     const inCal = calEl && calEl.contains && calEl.contains(e.target);
     if (!inBtn && !inCal) {
-      try { typeof calendar.hide === 'function' && calendar.hide(); } catch {}
+      try { typeof calendar.hide === 'function' && calendar.hide(); window.__vcOpen = false; } catch {}
       try { if (calEl && calEl.style) calEl.style.display = 'none'; } catch {}
     }
   };
