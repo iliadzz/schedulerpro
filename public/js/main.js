@@ -14,7 +14,8 @@ function __vcGetRoots() {
 
 function __vcMarkJustOpened(){ __vcJustOpened = true; setTimeout(() => { __vcJustOpened = false; }, 120); }
 
-function __vcShowCalendar(calendar) {
+function __vcShowCalendar(calendar) {  try { if (calendar && typeof calendar.show==='function') calendar.show(); } catch {}
+
   const { cal } = __vcGetRoots();
   if (!calendar) return;
   try { typeof calendar.show === 'function' && window.__vcOpen || __vcShowCalendar(calendar); window.__vcOpen = true; } catch {}
@@ -299,7 +300,7 @@ window.reinitializeDatePickers = function() {
             }
             
             if (weekPickerContainer) {
-                weekPickerContainer.style.display = 'none';
+                weekPickerContainer.style.display = 'none'; window.__vcOpen = false;
             }
         },
 
@@ -384,7 +385,7 @@ window.reinitializeDatePickers = function() {
     calendar.hide();
     
     if (weekPickerContainer) {
-        weekPickerContainer.style.display = 'none';
+        weekPickerContainer.style.display = 'none'; window.__vcOpen = false;
     }
     
     window.vanillaCalendar = calendar;
@@ -397,9 +398,12 @@ window.reinitializeDatePickers = function() {
             e.stopPropagation();
             vcLog('📍 Button clicked');
             if (weekPickerContainer) {
-                const isVisible = weekPickerContainer.style.display === 'block';
-                weekPickerContainer.style.display = isVisible ? 'none' : 'block';
-                if (!isVisible) {
+                const isVisible = getComputedStyle(weekPickerContainer).display !== 'none';
+if (!isVisible) {
+    if (typeof calendar.show === 'function') calendar.show();
+    weekPickerContainer.style.display = 'block';
+    window.__vcOpen = true;
+    
                     window.updateWeekBadge(weekPickerContainer, currentViewDate);
                     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
                     window.__vcOpen || __vcShowCalendar(calendar); window.__vcOpen = true;
@@ -418,7 +422,7 @@ window.reinitializeDatePickers = function() {
         if (weekPickerContainer && !weekPickerContainer.contains(e.target) && !newBtn.contains(e.target)) {
             calendar.hide();
             if (weekPickerContainer) {
-                weekPickerContainer.style.display = 'none';
+                weekPickerContainer.style.display = 'none'; window.__vcOpen = false;
             }
         }
     };
