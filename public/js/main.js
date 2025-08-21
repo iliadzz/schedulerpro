@@ -1,4 +1,130 @@
 
+// ===== VC helpers (clean, non-recursive) =====
+(function VCStableWiringBootstrap(){
+  // Global flags
+  window.__vcOpen = false;
+  window.__vcIgnoreOnce = false;
+
+  // Single stored doc handler reference
+  if (window.__vcDocHandler) {
+    document.removeEventListener('click', window.__vcDocHandler, false);
+    window.__vcDocHandler = null;
+  }
+
+  // Minimal, safe helpers
+  function __vcShowCalendar(calendar) {
+    try {
+      if (calendar && typeof calendar.show === 'function') {
+        calendar.show();
+      }
+    } catch (e) { console.warn('[VC] show failed', e); }
+  }
+
+  function __vcHideCalendar(calendar) {
+    try {
+      if (calendar && typeof calendar.hide === 'function') {
+        calendar.hide();
+      }
+    } catch (e) { console.warn('[VC] hide failed', e); }
+  }
+
+  function __vcGetBtn() {
+    return document.getElementById('date-picker-trigger-btn') ||
+           document.getElementById('week-picker-btn');
+  }
+
+  function __vcGetCal() {
+    try { if (window.calendar && window.calendar.HTML) return window.calendar.HTML; } catch {}
+    return document.querySelector('.vanilla-calendar');
+  }
+
+  function __vcDebug(where) {
+    const cal = __vcGetCal();
+    if (!cal) { console.log(`[VC] 🔎 ${where}: no cal element`); return; }
+    try {
+      const cs = getComputedStyle(cal);
+      const r  = cal.getBoundingClientRect();
+      console.log(`[VC] 🔎 ${where}: visible=${cs.visibility} display=${cs.display} opacity=${cs.opacity} z=${cs.zIndex}`);
+      console.log(`[VC] 📐 ${where}: rect=`, r.x, r.y, r.width, r.height);
+    } catch {}
+  }
+
+  function __vcOpenCal() {
+    const cal = __vcGetCal();
+    __vcShowCalendar(window.calendar);
+    if (cal) {
+      cal.classList.remove('vanilla-calendar_hidden','hidden','is-hidden');
+      cal.style.display = 'block';
+      cal.style.visibility = 'visible';
+      cal.style.opacity = '1';
+    }
+    window.__vcOpen = true;
+    window.__vcIgnoreOnce = true;
+    setTimeout(()=>{ window.__vcIgnoreOnce = false; }, 0);
+    console.log('[VC] 📅 Calendar shown');
+    __vcDebug('after OPEN');
+  }
+
+  function __vcCloseCal(reason) {
+    const cal = __vcGetCal();
+    __vcHideCalendar(window.calendar);
+    if (cal) {
+      cal.style.display = 'none';
+      cal.style.visibility = 'hidden';
+      cal.style.opacity = '0';
+    }
+    window.__vcOpen = false;
+    console.log(`[VC] 📅 Calendar hidden${reason ? ' ('+reason+')' : ''}`);
+    __vcDebug('after CLOSE');
+  }
+
+  // Start hidden on init
+  (function __vcInitHidden(){
+    const cal = __vcGetCal();
+    if (cal) {
+      cal.classList.add('vanilla-calendar_hidden');
+      cal.style.display = 'none';
+      cal.style.visibility = 'hidden';
+      cal.style.opacity = '0';
+    }
+    window.__vcOpen = false;
+    window.__vcIgnoreOnce = false;
+  })();
+
+  // Outside click (bubble phase) with ignore-once
+  window.__vcDocHandler = function(e){
+    if (window.__vcIgnoreOnce) { console.log('[VC] 🫰 Ignored first post-open doc click'); return; }
+    const btn = __vcGetBtn();
+    const cal = __vcGetCal();
+    const inBtn = !!(btn && btn.contains(e.target));
+    const inCal = !!(cal && cal.contains(e.target));
+    if (!inBtn && !inCal && window.__vcOpen) {
+      __vcCloseCal('outside-click');
+    }
+  };
+  document.addEventListener('click', window.__vcDocHandler, false);
+
+  // Button wiring (deterministic toggle based on __vcOpen)
+  (function __vcBindBtn(){
+    const btn = __vcGetBtn();
+    if (!btn) return;
+    if (btn.__vcClickHandler) btn.removeEventListener('click', btn.__vcClickHandler, false);
+    btn.__vcClickHandler = function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      console.log('[VC] 📍 Button clicked; __vcOpen =', window.__vcOpen);
+      if (!window.__vcOpen) __vcOpenCal(); else __vcCloseCal('button-toggle');
+    };
+    btn.addEventListener('click', btn.__vcClickHandler, false);
+    btn.__vcBindCount = (btn.__vcBindCount || 0) + 1;
+    console.log('[VC] 🔧 Button handler (re)bound x', btn.__vcBindCount);
+  })();
+
+  console.log('[VC] 🔧 Stable wiring attached (bubble phase, ignore-once enabled)');
+})(); 
+// ===== End helpers =====
+
 // === VC robust open/close guards v2 ===
 let __vcJustOpened = false;
 let __vcDocHandler = null;
@@ -18,7 +144,7 @@ function __vcShowCalendar(calendar) {  try { if (calendar && typeof calendar.sho
 
   const { cal } = __vcGetRoots();
   if (!calendar) return;
-  try { typeof calendar.show === 'function' && /* __vcShowCalendar removed (prevent recursion/double-show) */ } catch {}
+  try { typeof calendar.show === 'function' && window.__vcOpen || /* removed duplicate show */ } catch {}
   if (cal) {
     try {
       cal.classList.remove('vanilla-calendar_hidden','is-hidden','hidden');
@@ -47,12 +173,11 @@ function __vcAttachDocHandler(calendar){
     const inBtn = btn && btn.contains && btn.contains(e.target);
     const inCal = cal && cal.contains && cal.contains(e.target);
     if (!inBtn && !inCal) {
-      try { typeof calendar.hide === 'function' && calendar.hide(); window.__vcOpen = false;
-    window.__vcIgnoreOnce = false; } catch {}
+      try { typeof calendar.hide === 'function' && calendar.hide(); window.__vcOpen = false; } catch {}
       try { if (cal && cal.style) cal.style.display = 'none'; } catch {}
     }
   };
-  document.addEventListener('click', __vcDocHandler, true);
+  /* disabled by stable wiring */ // document.addEventListener('click', __vcDocHandler, true);
   console.log('[VC] 🧷 Document click handler (re)attached');
 }
 
@@ -68,7 +193,7 @@ function __vcBindBtn(calendar){
     e.stopPropagation();
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     console.log('[VC] 📍 Button clicked');
-    /* __vcShowCalendar removed (prevent recursion/double-show) */
+    window.__vcOpen || /* removed duplicate show */
   };
   btn.addEventListener('click', btn.__vcClickHandler, true);
   console.log('[VC] 🔗 Button handler (re)bound');
@@ -302,7 +427,6 @@ window.reinitializeDatePickers = function() {
             
             if (weekPickerContainer) {
                 weekPickerContainer.style.display = 'none'; window.__vcOpen = false;
-    window.__vcIgnoreOnce = false;
             }
         },
 
@@ -388,7 +512,6 @@ window.reinitializeDatePickers = function() {
     
     if (weekPickerContainer) {
         weekPickerContainer.style.display = 'none'; window.__vcOpen = false;
-    window.__vcIgnoreOnce = false;
     }
     
     window.vanillaCalendar = calendar;
@@ -397,7 +520,7 @@ window.reinitializeDatePickers = function() {
     const newBtn = document.getElementById('date-picker-trigger-btn') || document.getElementById('week-picker-btn');
     if (newBtn) {
         vcLog('🔗 Attaching button click listener');
-        newBtn.addEventListener('click', (e) => {
+        /* disabled by stable wiring */ // newBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             vcLog('📍 Button clicked');
             if (weekPickerContainer) {
@@ -405,37 +528,16 @@ window.reinitializeDatePickers = function() {
 if (!isVisible) {
     if (typeof calendar.show === 'function') calendar.show();
     weekPickerContainer.style.display = 'block';
-    window.__vcIgnoreOnce = true; setTimeout(()=>window.__vcIgnoreOnce=false,0);
     window.__vcOpen = true;
     
                     window.updateWeekBadge(weekPickerContainer, currentViewDate);
                     window.highlightWeekInCalendar(calendar, currentViewDate, weekStartsOn());
-                    /* __vcShowCalendar removed (prevent recursion/double-show) */
+                    window.__vcOpen || /* removed duplicate show */
                     vcLog('📅 Calendar shown');
-                
-    try {
-      const cal = (window.calendar && window.calendar.HTML) || document.querySelector('.vanilla-calendar');
-      if (cal) {
-        const cs = getComputedStyle(cal);
-        const r = cal.getBoundingClientRect();
-        console.log('[VC] 🔎 after OPEN: visible=', cs.visibility, 'display=', cs.display, 'opacity=', cs.opacity, 'z=', cs.zIndex);
-        console.log('[VC] 📐 after OPEN: rect=', r.x, r.y, r.width, r.height);
-      }
-    } catch {}
-} else {
+                } else {
                     calendar.hide();
                     vcLog('📅 Calendar hidden');
-                
-    try {
-      const cal = (window.calendar && window.calendar.HTML) || document.querySelector('.vanilla-calendar');
-      if (cal) {
-        const cs = getComputedStyle(cal);
-        const r = cal.getBoundingClientRect();
-        console.log('[VC] 🔎 after CLOSE: visible=', cs.visibility, 'display=', cs.display, 'opacity=', cs.opacity, 'z=', cs.zIndex);
-        console.log('[VC] 📐 after CLOSE: rect=', r.x, r.y, r.width, r.height);
-      }
-    } catch {}
-}
+                }
             }
         });
     }
@@ -443,12 +545,10 @@ if (!isVisible) {
     // Re-attach document click listener for closing calendar
     // Remove old listener first to prevent duplicates
     const closeHandler = (e) => {
-        if (window.__vcIgnoreOnce) { vcLog('🫰 Ignored first post-open doc click'); return; }
         if (weekPickerContainer && !weekPickerContainer.contains(e.target) && !newBtn.contains(e.target)) {
             calendar.hide();
             if (weekPickerContainer) {
                 weekPickerContainer.style.display = 'none'; window.__vcOpen = false;
-    window.__vcIgnoreOnce = false;
             }
         }
     };
@@ -467,7 +567,7 @@ let __vcJustOpened = false;
 function __vcMarkJustOpened() { __vcJustOpened = true; setTimeout(() => { __vcJustOpened = false; }, 120); }
 function __vcShowCalendar(calendar, calRoot) {
   if (!calendar) return;
-  if (typeof calendar.show === 'function') window.__vcOpen || calendar.show(); window.__vcOpen = true;
+  if (typeof calendar.show === 'function') window.__vcOpen || /* removed duplicate show */
   if (calRoot) {
     try {
       calRoot.classList && calRoot.classList.remove('vanilla-calendar_hidden','is-hidden','hidden');
@@ -483,13 +583,12 @@ function __vcMakeDocClickHandler(calendar, btn, calEl) {
     const inBtn = btn && btn.contains && btn.contains(e.target);
     const inCal = calEl && calEl.contains && calEl.contains(e.target);
     if (!inBtn && !inCal) {
-      try { typeof calendar.hide === 'function' && calendar.hide(); window.__vcOpen = false;
-    window.__vcIgnoreOnce = false; } catch {}
+      try { typeof calendar.hide === 'function' && calendar.hide(); window.__vcOpen = false; } catch {}
       try { if (calEl && calEl.style) calEl.style.display = 'none'; } catch {}
     }
   };
 }
-document.addEventListener('click', window.__calendarCloseHandler);
+/* disabled by stable wiring */ // document.addEventListener('click', closeHandler);
 
     window.updatePickerButtonText(currentViewDate);
     vcLog('✅ Date picker reinitialization complete');
